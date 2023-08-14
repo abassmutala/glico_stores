@@ -1,0 +1,9 @@
+const String welcomeViewRoute = "WelcomeView";
+const String signInViewRoute = "SignInView";
+const String signUpViewRoute = "SignUpView";
+const String forgotPasswordRoute = "ForgotPasswordView";
+const String profileViewRoute = "ProfileView";
+const String businessesListRoute = "BusinessesList";
+const String addBusinessRoute = "AddBusiness";
+const String businessDetailsRoute = "BusinessDetails";
+const String editBusinessDetailsRoute = "EditBusinessDetails";
