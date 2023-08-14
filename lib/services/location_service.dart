@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
+import 'package:glico_stores/constants/credentials.dart';
 import 'package:glico_stores/models/business_location.dart';
 import 'package:http/http.dart' as http;
 // import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -66,7 +67,7 @@ class LocationService {
     double lat,
     double lng,
   ) async {
-    String apiKey = "AIzaSyDI0LaXHJA3ZwjmwgS-FKXyK6xGkai-kuY";
+    String apiKey = placesApiKey;
     String url =
         "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey&enable_address_descriptor=true";
 
