@@ -1,1 +1,1 @@
-enum InsuranceType { business, products }
+enum InsuranceType { unselected, business, products }

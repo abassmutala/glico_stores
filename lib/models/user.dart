@@ -8,6 +8,8 @@ class User {
   final String? color;
   final String? dateJoined;
   final List? addedBusinesses;
+  final Map? deviceInfo;
+  final int? uniqueCode; 
 
   User({
     required this.uid,
@@ -19,6 +21,8 @@ class User {
     this.color,
     this.dateJoined,
     this.addedBusinesses,
+    this.deviceInfo,
+    this.uniqueCode,
   });
 
   factory User.fromMap(Map<String, dynamic> mapData) {
@@ -31,6 +35,8 @@ class User {
     final String color = mapData['color'];
     final String dateJoined = mapData['dateJoined'];
     final List? addedBusinesses = mapData['addedBusinesses'];
+    final Map? deviceInfo = mapData['deviceInfo'];
+    final int? uniqueCode = mapData['uniqueCode'];
 
     return User(
       uid: uid,
@@ -42,6 +48,8 @@ class User {
       color: color,
       dateJoined: dateJoined,
       addedBusinesses: addedBusinesses,
+      deviceInfo: deviceInfo,
+      uniqueCode: uniqueCode,
     );
   }
 
@@ -56,6 +64,8 @@ class User {
       "color": color,
       "dateJoined": dateJoined,
       "addedBusinesses": addedBusinesses,
+      "deviceInfo": deviceInfo,
+      "uniqueCode": uniqueCode,
     };
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:glico_stores/constants/app_colors.dart';
 import 'package:glico_stores/constants/route_names.dart';
 import 'package:glico_stores/constants/ui_constants.dart';
 import 'package:glico_stores/locator.dart';
@@ -54,73 +55,87 @@ class _BusinessDetailsState extends State<BusinessDetails> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Scaffold(
-      body: FutureBuilder<Business>(
-          future: db.getBusiness(widget.uid),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              final Business business = snapshot.data!;
-              return Hero(
-                tag: widget.uid,
-                child: Scaffold(
-                  body: NestedScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    headerSliverBuilder:
-                        (BuildContext context, bool innerBoxIsScrolled) {
-                      return <Widget>[
-                        sliverAppBar(theme, business, context),
-                      ];
-                    },
-                    body: body(business, theme),
+    return FutureBuilder<Business>(
+        future: db.getBusiness(widget.uid),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final Business business = snapshot.data!;
+            return Hero(
+              tag: widget.uid,
+              child: Stack(
+                children: [
+                  business.photos!.isEmpty
+                      ? Container(
+                          color: theme.colorScheme.secondary,
+                        )
+                      : Container(),
+                  Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: NestedScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      headerSliverBuilder:
+                          (BuildContext context, bool innerBoxIsScrolled) {
+                        return <Widget>[
+                          sliverAppBar(theme, business, context),
+                        ];
+                      },
+                      body: body(business, theme),
+                    ),
                   ),
-                ),
-              );
-            }
-            return const DetailsSkeleton();
-          }),
-    );
+                ],
+              ),
+            );
+          }
+          return const DetailsSkeleton();
+        });
   }
 
   Widget body(Business business, ThemeData theme) {
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: ScreenSize.width >= 600 ? 80 : 0,
-      ),
-      child: ListView(
-        children: [
-          Spacing.verticalSpace16,
-          DetailTile(
-            icon: LucideIcons.binary,
-            title: business.uniqueCode!,
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.vertical(
+            top: ScreenSize.width >= 600
+                ? const Radius.circular(60.0)
+                : const Radius.circular(16.0),
           ),
-          divider(theme),
-          DetailTile(
-            icon: LucideIcons.mapPin,
-            title: business.address!,
+          color: Colors.white,
+        ),
+        child: ListView(
+          padding: EdgeInsets.symmetric(
+            horizontal: ScreenSize.width >= 600 ? 80 : 0,
           ),
-          divider(theme),
-          phoneNumbersWidget(business.phone, theme),
-          DetailTile(
-            icon: LucideIcons.user2,
-            title: "${business.owner}",
-          ),
-          divider(theme),
-          DetailTile(
-            icon: LucideIcons.package,
-            title: "To insure ${business.insuranceType!}",
-          ),
-          divider(theme),
-          DetailTile(
-            icon: LucideIcons.wallet,
-            title:
-                "Assets estimated at a value of GH¢${business.estimatedAssetValue!}",
-          ),
-          divider(theme),
-          DetailTile(
-            icon: LucideIcons.coins,
-            title: "To pay a premium of GH¢${business.premium!}",
-          ),
-        ],
+          children: [
+            Spacing.verticalSpace16,
+            DetailTile(
+              icon: LucideIcons.user2,
+              title: "${business.owner}",
+            ),
+            divider(theme),
+            DetailTile(
+              icon: LucideIcons.mapPin,
+              title: business.address!,
+            ),
+            divider(theme),
+            phoneNumbersWidget(business.phone, theme),
+            DetailTile(
+              icon: LucideIcons.package,
+              title: "To insure ${business.insuranceType!}",
+            ),
+            divider(theme),
+            DetailTile(
+              icon: LucideIcons.wallet,
+              title:
+                  "Assets estimated at a value of GH¢${business.estimatedAssetValue!}",
+            ),
+            divider(theme),
+            DetailTile(
+              icon: LucideIcons.coins,
+              title: "To pay a premium of GH¢${business.premium!}",
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -128,16 +143,12 @@ class _BusinessDetailsState extends State<BusinessDetails> {
   SliverAppBar sliverAppBar(
       ThemeData theme, Business business, BuildContext context) {
     return SliverAppBar(
-      leading: IconButton.filledTonal(
+      leading: IconButton(
         onPressed: () => navService.pop(),
-        icon: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: theme.canvasColor.withOpacity(0.1),
-          ),
-          child: const Icon(
-            LucideIcons.arrowLeft,
-          ),
+        icon: const Icon(
+          LucideIcons.chevronLeft,
+          color: Colors.white,
+          size: 32,
         ),
       ),
       actions: [
@@ -148,13 +159,9 @@ class _BusinessDetailsState extends State<BusinessDetails> {
               arguments: business.uid,
             );
           },
-          icon: Container(
-            width: 36.0,
-            height: 36.0,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.canvasColor.withOpacity(0.5)),
-            child: const Icon(LucideIcons.edit2),
+          icon: const Icon(
+            LucideIcons.edit2,
+            color: Colors.white,
           ),
           tooltip: "Edit",
         ),
@@ -164,21 +171,14 @@ class _BusinessDetailsState extends State<BusinessDetails> {
               builder: (context) {
                 return deleteDialog(business, theme, context);
               }),
-          icon: Container(
-            width: 36.0,
-            height: 36.0,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.canvasColor.withOpacity(0.5),
-            ),
-            child: const Icon(
-              LucideIcons.trash,
-            ),
+          icon: const Icon(
+            LucideIcons.trash,
+            color: Colors.white,
           ),
           tooltip: "Delete",
         )
       ],
-      expandedHeight: kToolbarHeight * 7,
+      expandedHeight: kToolbarHeight * 6,
       pinned: true,
       stretch: true,
       elevation: 0.0,
@@ -187,7 +187,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
     );
   }
 
-  FlexibleSpaceBar photosCarousel(Business business, ThemeData theme) {
+  Widget photosCarousel(Business business, ThemeData theme) {
     return FlexibleSpaceBar(
       background: business.photos!.isNotEmpty
           ? PageView.builder(
@@ -196,20 +196,22 @@ class _BusinessDetailsState extends State<BusinessDetails> {
               itemBuilder: (context, index) => Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  Positioned.fill(
-                    child: CachedNetworkImage(
-                      progressIndicatorBuilder: (context, url, progress) =>
-                          const Center(
-                        child: CircularProgressIndicator.adaptive(),
-                      ),
-                      imageUrl: business.photos![index],
-                      errorWidget: (context, url, error) => const Icon(
-                        LucideIcons.imageOff,
-                        size: IconSizes.largest,
-                      ),
-                      fit: BoxFit.cover,
-                      width: ScreenSize.width,
+                  CachedNetworkImage(
+                    progressIndicatorBuilder: (context, url, progress) =>
+                        const Center(
+                      child: CircularProgressIndicator.adaptive(),
                     ),
+                    imageUrl: business.photos![index],
+                    errorWidget: (context, url, error) => const Icon(
+                      LucideIcons.imageOff,
+                      size: IconSizes.largest,
+                    ),
+                    fit: BoxFit.cover,
+                    width: ScreenSize.width,
+                  ),
+                  Container(
+                    color: Colors.black54,
+                    // onDismiss: () {},
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -254,9 +256,20 @@ class _BusinessDetailsState extends State<BusinessDetails> {
       stretchModes: const [
         StretchMode.zoomBackground,
       ],
-      title: Text(
-        business.name!,
-        style: theme.textTheme.titleLarge,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            business.name!,
+            style: theme.textTheme.titleLarge!.copyWith(color: Colors.white),
+          ),
+          Text(
+            "Business ID: ${business.uniqueCode!}",
+            style: theme.textTheme.labelSmall!
+                .copyWith(color: Colors.white, letterSpacing: 0),
+          ),
+        ],
       ),
       titlePadding: const EdgeInsetsDirectional.only(start: 72, bottom: 16),
     );
@@ -304,8 +317,8 @@ class _BusinessDetailsState extends State<BusinessDetails> {
   }
 
   Widget divider(ThemeData theme) {
-    return Divider(
-      color: theme.colorScheme.primary,
+    return const Divider(
+      color: borderColor,
     );
   }
 

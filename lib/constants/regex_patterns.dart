@@ -4,4 +4,5 @@ final emailPattern = RegExp(
 final phoneNumberPattern = RegExp(r"^[+0-9]{10,}$");
 //RegExp(r"^[+.0-9]+");
 
+final RegExp commaSeparator = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
 

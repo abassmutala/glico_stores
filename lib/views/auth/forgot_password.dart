@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:glico_stores/constants/app_colors.dart';
 import 'package:glico_stores/constants/regex_patterns.dart';
 import 'package:glico_stores/constants/route_names.dart';
 import 'package:glico_stores/constants/ui_constants.dart';
 import 'package:glico_stores/locator.dart';
 import 'package:glico_stores/services/auth_service.dart';
+import 'package:glico_stores/widgets/input_field.dart';
 
 import '../../services/navigation_service.dart';
 
@@ -49,9 +51,13 @@ class _ForgotPasswordState extends State<ForgotPassword>
 
   Future forgotPassword() async {
     try {
-      isLoading = true;
+      setState(() {
+        isLoading = true;
+      });
       await _auth.sendPasswordResetEmail(_emailController.text);
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -60,7 +66,9 @@ class _ForgotPasswordState extends State<ForgotPassword>
       );
       _navigationService.navigateToReplacement(signInViewRoute);
     } on PlatformException catch (e) {
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
       throw PlatformException(code: e.code, message: e.message);
     }
   }
@@ -69,50 +77,101 @@ class _ForgotPasswordState extends State<ForgotPassword>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Forgot password"),
-      ),
-      body: Align(
-        alignment: Alignment.center,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 450,
-          ),
-          child: Center(
-            child: ListView(
-              shrinkWrap: true,
-              padding:
-                  const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-              children: <Widget>[
-                Spacing.verticalSpace24,
-                Text(
-                  "Enter your email address below to receive a password reset email.",
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium,
-                ),
-                Spacing.verticalSpace24,
-                _forgotPasswordForm(theme),
-                Spacing.verticalSpace24,
-                ElevatedButton(
-                  // isLoading: isLoading!,
-                  // margin: Insets.verticalPadding12,
-                  child: Text(
-                    "Request email",
-                    style: theme.textTheme.titleMedium!
-                        .copyWith(color: Colors.white),
+    return Stack(
+      children: [
+        Image.asset(
+          "images/rectangle.png",
+          fit: BoxFit.cover,
+        ),
+        const ModalBarrier(
+          color: modalBg,
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            shadowColor: Colors.transparent,
+            automaticallyImplyLeading: false,
+            toolbarHeight: kToolbarHeight * 4,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      "images/rectangle.png",
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                    ),
                   ),
-                  onPressed: () async =>
-                      _forgotPasswordFormKey.currentState!.validate() &&
-                              !isLoading
-                          ? await forgotPassword()
-                          : null,
-                ),
-              ],
+                  const ModalBarrier(
+                    color: Colors.black45,
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 320,
+                        child:
+                            SvgPicture.asset("images/glico_general_logo.svg"),
+                      ),
+                      Text(
+                        "Forgot Password",
+                        style: theme.textTheme.headlineMedium!.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+          body: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.vertical(
+                top: ScreenSize.width >= 600
+                    ? const Radius.circular(60)
+                    : const Radius.circular(25),
+              ),
+              color: Colors.white,
+            ),
+            child: Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: ScreenSize.width >= 600 ? 64 : 16,
+              ),
+              child: ListView(
+                padding: const EdgeInsets.only(top: 32),
+                children: <Widget>[
+                  Spacing.verticalSpace16,
+                  Text(
+                    "Enter your email address below to receive a password reset email.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  Spacing.verticalSpace24,
+                  _forgotPasswordForm(theme),
+                  Spacing.verticalSpace24,
+                  ElevatedButton(
+                    // isLoading: isLoading!,
+                    // margin: Insets.verticalPadding12,
+                    child: Text(
+                      "Request email",
+                      style: theme.textTheme.titleMedium!
+                          .copyWith(color: Colors.white),
+                    ),
+                    onPressed: () async =>
+                        _forgotPasswordFormKey.currentState!.validate() &&
+                                !isLoading
+                            ? await forgotPassword()
+                            : null,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -132,70 +191,34 @@ class _ForgotPasswordState extends State<ForgotPassword>
   Widget _emailInputField(
     ThemeData theme,
   ) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        autofocus: true,
-        focusNode: _emailFocus,
-        onEditingComplete: () => _emailEditingComplete(),
-        controller: _emailController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of business"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Email address",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) =>
-            !emailPattern.hasMatch(val!) ? "Invalid email address" : null,
-        keyboardType: TextInputType.emailAddress,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      autofocus: true,
+      focusNode: _emailFocus,
+      onEditingComplete: () => _emailEditingComplete(),
+      controller: _emailController,
+      hintText: "Email address",
+      validator: (val) =>
+          !emailPattern.hasMatch(val!) ? "Invalid email address" : null,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
     );
   }
 
   Widget _passwordInputField(
     ThemeData theme,
   ) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        autofocus: true,
-        focusNode: _passwordFocus,
-        onEditingComplete: () => _passwordEditingComplete(),
-        controller: _passwordController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of business"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Password",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 8 ? "Password is too short" : null,
-        keyboardType: TextInputType.text,
-        obscureText: true,
-        textInputAction: TextInputAction.done,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      autofocus: true,
+      focusNode: _passwordFocus,
+      onEditingComplete: () => _passwordEditingComplete(),
+      controller: _passwordController,
+      hintText: "Password",
+      validator: (val) => val!.length < 8 ? "Password is too short" : null,
+      keyboardType: TextInputType.text,
+      obscureText: true,
+      textInputAction: TextInputAction.done,
     );
   }
 }

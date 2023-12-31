@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:glico_stores/constants/api_path.dart';
 import 'package:glico_stores/constants/app_colors.dart';
 import 'package:glico_stores/constants/regex_patterns.dart';
@@ -22,7 +23,9 @@ import 'package:glico_stores/services/storage_service.dart';
 import 'package:glico_stores/utils/enums.dart';
 import 'package:glico_stores/utils/utilities.dart';
 import 'package:glico_stores/views/map_view.dart';
+import 'package:glico_stores/widgets/input_field.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -54,15 +57,15 @@ class _AddBusinessState extends State<AddBusiness> {
   _ownerEditingComplete() => FocusScope.of(context).nextFocus();
   _addressEditingComplete() => FocusScope.of(context).nextFocus();
   _commentEditingComplete() => FocusScope.of(context).nextFocus();
-  _assetCostEditingComplete() => {FocusScope.of(context).nextFocus()};
+  _assetCostEditingComplete() => FocusScope.of(context).nextFocus();
 
   late bool isLoading;
   late BusinessLocation? currentLocation;
   late BusinessLocation? currentAddress;
   late GeoPoint? coordinates;
   late List<File>? selectedImages;
-  String dropdownValue = 'other';
-  InsuranceType insuranceTypeValue = InsuranceType.business;
+  String dropdownValue = '';
+  InsuranceType insuranceTypeValue = InsuranceType.unselected;
 
   void _addPhoneNumber() {
     setState(() {
@@ -133,7 +136,9 @@ class _AddBusinessState extends State<AddBusiness> {
 
   Future getCurrentLocation() async {
     try {
-      isLoading = true;
+      setState(() {
+        isLoading = true;
+      });
       currentLocation = await locationService.getAddressFromCoordinates();
       _addressController.text =
           "${currentLocation?.city}, ${currentLocation?.region}";
@@ -141,10 +146,13 @@ class _AddBusinessState extends State<AddBusiness> {
         coordinates =
             GeoPoint(currentLocation!.latitude!, currentLocation!.longitude!);
       });
-
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
     } on PlatformException catch (e) {
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
       debugPrint(e.message);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -163,6 +171,8 @@ class _AddBusinessState extends State<AddBusiness> {
 
     for (var i = 0; i < photos.length; i++) {
       final photo = photos[i];
+      // final compressedImage = await storageService.compressImage(photo);
+      // print("Photo: $compressedImage");
       final downloadUrl =
           await storageService.uploadPhoto(photo, APIPath.businessPhotos(uid));
       downloadUrls.add(downloadUrl);
@@ -184,6 +194,10 @@ class _AddBusinessState extends State<AddBusiness> {
 
     List<String> phoneNumbersList =
         _phoneInputControllers.map((e) => e.text).toList();
+    final estimatedAssetValue =
+        double.tryParse(_assetCostController.text.replaceAll(",", ""));
+    final premium =
+        double.tryParse(_premiumController.text.replaceAll(",", ""));
     Business newBusiness = Business(
       uid: "uid",
       name: _nameController.text.trim(),
@@ -194,8 +208,8 @@ class _AddBusinessState extends State<AddBusiness> {
       category: dropdownValue,
       phone: phoneNumbersList,
       insuranceType: insuranceTypeValue.name,
-      estimatedAssetValue: double.parse(_assetCostController.text),
-      premium: double.parse(_premiumController.text),
+      estimatedAssetValue: estimatedAssetValue,
+      premium: premium,
       insured: false,
       photos: [],
       regDate: Timestamp.fromDate(
@@ -204,8 +218,9 @@ class _AddBusinessState extends State<AddBusiness> {
       uniqueCode: Utilities.generateBusinessCode(_addressController.text),
     );
     try {
-      isLoading = true;
-      debugPrint("Loading state: $isLoading");
+      setState(() {
+        isLoading = true;
+      });
       final uid = await db.createBusinessProfile(newBusiness);
       await db.updateBusinessUid(uid);
       selectedImages != null
@@ -214,6 +229,9 @@ class _AddBusinessState extends State<AddBusiness> {
             )
           : null;
       await db.updateRegisteredBusinessesForUser(currentUser!.uid, uid);
+      setState(() {
+        isLoading = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -222,10 +240,11 @@ class _AddBusinessState extends State<AddBusiness> {
         ),
       );
 
-      isLoading = false;
       navService.navigateToReplacement(businessesListRoute);
     } on PlatformException catch (e) {
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
       throw PlatformException(
         code: e.code,
         message: e.message,
@@ -238,45 +257,118 @@ class _AddBusinessState extends State<AddBusiness> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage("images/map_bg.png"),
+    // return Stack(
+    //   children: [
+    //     Stack(
+    //       fit: StackFit.expand,
+    //       children: [
+    //         Image.asset(
+    //           "images/rectangle.png",
+    //           fit: BoxFit.cover,
+    //           alignment: Alignment.topCenter,
+    //         ),
+    //         Container(
+    //           color: Colors.black54,
+    //         ),
+    //         Column(
+    //           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    //           crossAxisAlignment: CrossAxisAlignment.center,
+    //           children: [
+    //             SizedBox(
+    //               width: 320,
+    //               child: SvgPicture.asset("images/glico_general_logo.svg"),
+    //             ),
+    //           ],
+    //         )
+    //       ],
+    //     ),
+    //     DraggableScrollableSheet(
+    //         maxChildSize: 0.85,
+    //         minChildSize: 0.2,
+    //         builder: (context, scrollController) {
+    //           return Container(
+    //             padding: const EdgeInsets.symmetric(horizontal: 20),
+    //             decoration: const BoxDecoration(
+    //                 color: Colors.white,
+    //                 borderRadius:
+    //                     BorderRadius.vertical(top: Radius.circular(30))),
+    //             child: SingleChildScrollView(
+    //               controller: scrollController,
+    //               child: const Column(
+    //                 children: [],
+    //               ),
+    //             ),
+    //           );
+    //         })
+    //   ],
+    // );
+    return Stack(
+      children: [
+        Image.asset(
+          "images/rectangle.png",
           fit: BoxFit.cover,
         ),
-        color: Color(0xFFe5e9f2),
-      ),
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text("Add business"),
+        const ModalBarrier(
+          color: modalBg,
         ),
-        body: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(
-                "images/map_bg.png",
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            shadowColor: Colors.transparent,
+            automaticallyImplyLeading: false,
+            toolbarHeight: kToolbarHeight * 2.5,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      "images/rectangle.png",
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                    ),
+                  ),
+                  const ModalBarrier(
+                    color: Colors.black45,
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 320,
+                        child:
+                            SvgPicture.asset("images/glico_general_logo.svg"),
+                      ),
+                      Text(
+                        "Add business",
+                        style: theme.textTheme.headlineSmall!.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  )
+                ],
               ),
-              fit: BoxFit.cover,
             ),
           ),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 450,
+          body: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.vertical(
+                top: ScreenSize.width >= 600
+                    ? const Radius.circular(60)
+                    : const Radius.circular(25),
+              ),
+              color: Colors.white,
+            ),
+            child: Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: ScreenSize.width >= 600 ? 64 : 16,
               ),
               child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 48.0),
+                padding: const EdgeInsets.symmetric(vertical: 32),
                 children: [
-                  Spacing.verticalSpace8,
-                  SizedBox(
-                    height: 120,
-                    child: Image.asset("images/glicogeneral_logo.png"),
-                  ),
-                  Spacing.verticalSpace12,
                   Form(
                     key: _addBusinessFormKey,
                     child: Column(
@@ -302,202 +394,118 @@ class _AddBusinessState extends State<AddBusiness> {
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
+  String _formatWithCommas(String value) {
+    final format = NumberFormat("#,###.##");
+    return format.format(double.parse(value));
+  }
+
+  void _updatePremium(String value) {
+    if (value.isEmpty) {
+      _premiumController.text = '';
+    } else {
+      double inputValue = double.tryParse(value.replaceAll(',', '')) ?? 0;
+      double result = inputValue * 0.025;
+      final formattedResult = _formatWithCommas(result.toStringAsFixed(2));
+      _premiumController.text = formattedResult;
+      // result.toStringAsFixed(2); // Format result to 2 decimal places
+    }
+  }
+
   Widget _nameInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        autofocus: true,
-        focusNode: _nameFocus,
-        onEditingComplete: () => _nameEditingComplete(),
-        controller: _nameController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of business"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Business name",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) =>
-            val!.length < 2 ? "Business name is too short" : null,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      hintText: "Business name",
+      autofocus: true,
+      focusNode: _nameFocus,
+      onEditingComplete: () => _nameEditingComplete(),
+      controller: _nameController,
+      validator: (val) => val!.length < 2 ? "Business name is too short" : null,
     );
   }
 
   Widget _ownerInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _ownerFocus,
-        onEditingComplete: () => _ownerEditingComplete(),
-        controller: _ownerController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of owner"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Owner's name",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 3 ? "Name is too short" : null,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      hintText: "Owner's name",
+      focusNode: _ownerFocus,
+      onEditingComplete: () => _ownerEditingComplete(),
+      controller: _ownerController,
+      validator: (val) => val!.length < 3 ? "Name is too short" : null,
     );
   }
 
   Widget _addressInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _addressFocus,
-        onEditingComplete: () => _addressEditingComplete(),
-        controller: _addressController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Tap to find address",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 3 ? "Invalid address" : null,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.next,
-        readOnly: true,
-        onTap: () => getCurrentLocation(),
-      ),
+    return InputField(
+      isLoading: isLoading,
+      hintText: "Tap to find address",
+      focusNode: _addressFocus,
+      onEditingComplete: () => _addressEditingComplete(),
+      controller: _addressController,
+      validator: (val) => val!.length < 3 ? "Invalid address" : null,
+      keyboardType: TextInputType.text,
+      textInputAction: TextInputAction.next,
+      readOnly: true,
+      onTap: () => getCurrentLocation(),
     );
   }
 
   Widget _estimatedAssetCostInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _assetCostFocus,
-        onEditingComplete: () => _assetCostEditingComplete(),
-        controller: _assetCostController,
-        onChanged: (val) => _premiumController.text =
-            (double.parse(_assetCostController.text) * 0.025).toString(),
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of owner"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            labelText: "Estimated cost of assets (GH¢)",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 3 ? "Name is too short" : null,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      hintText: "Estimated cost of assets (GH¢)",
+      focusNode: _assetCostFocus,
+      onEditingComplete: () => _assetCostEditingComplete(),
+      controller: _assetCostController,
+      onChanged: (val) {
+        _updatePremium(val);
+      },
+      // onChanged: (val) {
+      //   _premiumController.text =
+      //     (double.parse(_assetCostController.text) * 0.025).toString();
+      // },
+      inputFormatters: [
+        // FilteringTextInputFormatter.digitsOnly,
+        ThousandsSeparatorInputFormatter(),
+      ],
+      // onChanged: (val) {
+      //   if (val.isNotEmpty) {
+      //     // _premiumController.text = "${(double.parse(val) * 0.025)}";
+      //     String formattedValue =
+      //         Utilities.formatNumber(_assetCostController.text);
+      //     _assetCostController.value = _assetCostController.value.copyWith(
+      //         text: formattedValue,
+      //         selection:
+      //             TextSelection.collapsed(offset: formattedValue.length));
+      //   }
+      // },
+      validator: (val) => val!.length < 3 ? "Name is too short" : null,
+      keyboardType: TextInputType.number,
     );
   }
 
   Widget _premium(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        // focusNode: _assetCostFocus,
-        readOnly: true,
-        // onEditingComplete: () => _assetCostEditingComplete(),
-        controller: _premiumController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of owner"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            labelText: "Premium",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      hintText: "Premium",
+      readOnly: true,
+      controller: _premiumController,
     );
   }
 
   Widget _commentInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        autofocus: true,
-        focusNode: _commentFocus,
-        onEditingComplete: () => _commentEditingComplete(),
-        controller: _commentController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Comment",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto,
-            counterStyle: const TextStyle(color: Colors.white)),
-        style: theme.textTheme.titleLarge,
-        // validator: (val) =>
-        //     val!.length < 2 ? "Business name is too short" : null,
-        keyboardType: TextInputType.text,
-        maxLines: 8,
-        maxLength: 250,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      hintText: "Comment",
+      focusNode: _commentFocus,
+      onEditingComplete: () => _commentEditingComplete(),
+      controller: _commentController,
+      maxLines: 6,
+      maxLength: 250,
+      borderRadius: 25.0,
     );
   }
 
@@ -507,7 +515,8 @@ class _AddBusinessState extends State<AddBusiness> {
       children: [
         Text(
           "Add photos of business",
-          style: theme.textTheme.titleLarge!.copyWith(color: Colors.white),
+          style: theme.textTheme.titleMedium!.copyWith(color: Colors.black54),
+          textAlign: TextAlign.center,
         ),
         Spacing.verticalSpace8,
         Wrap(
@@ -519,25 +528,34 @@ class _AddBusinessState extends State<AddBusiness> {
               child: FloatingActionButton.large(
                 heroTag: "business photos",
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+                  borderRadius: BorderRadius.circular(24.0),
                 ),
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.3),
+                backgroundColor: kGlicoInputFill,
                 elevation: 0.0,
-                child: Icon(
+                child: const Icon(
                   LucideIcons.plus,
-                  color: theme.colorScheme.primary,
+                  color: Colors.black45,
+                  size: 48,
                 ),
                 onPressed: () {
                   showDialog(
                     context: context,
                     builder: (context) => SimpleDialog(
-                      title: const Text("Choose photos"),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
+                      title: Text(
+                        "Choose photos",
+                        style: theme.textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
+                      ),
                       // height: kToolbarHeight * 2,
                       children: [
                         ListTile(
                           // dense: true,
                           leading: const Icon(LucideIcons.camera),
-                          title: const Text("Take a photo"),
+                          title: Text("Take a photo",
+                              style: theme.textTheme.bodyLarge),
                           onTap: () async {
                             navService.pop();
                             _takeCameraImages();
@@ -546,7 +564,8 @@ class _AddBusinessState extends State<AddBusiness> {
                         ListTile(
                           // dense: true,
                           leading: const Icon(LucideIcons.image),
-                          title: const Text("Choose from gallery"),
+                          title: Text("Choose from gallery",
+                              style: theme.textTheme.bodyLarge),
                           onTap: () {
                             navService.pop();
                             // pickImages();
@@ -559,30 +578,79 @@ class _AddBusinessState extends State<AddBusiness> {
                 },
               ),
             ),
-            Wrap(
-              spacing: 12.0,
-              children: selectedImages != null
-                  ? selectedImages!
-                      .map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12.0),
-                            child: SizedBox(
-                              // margin: const EdgeInsets.only(right: 8.0),
-                              width: 95.5,
-                              height: 95.5,
-                              child: Image.file(
-                                File(e.path),
-                                fit: BoxFit.cover,
+            // Wrap(
+            //   spacing: 12.0,
+            //   children: selectedImages != null
+            //       ? selectedImages!
+            //           .map(
+            //             (e) => Stack(
+            //               children: [
+            //               InkWell(
+            //                 onTap: () {},
+            //                 child: Container(
+            //                   padding: EdgeInsets.all(8.0),
+            //                   child: Icon(LucideIcons.minusCircle, color: theme.colorScheme.error,),
+            //                 ),
+            //               ),
+            //                 ClipRRect(
+            //                   borderRadius: BorderRadius.circular(24.0),
+            //                   child: SizedBox(
+            //                     // margin: const EdgeInsets.only(right: 8.0),
+            //                     width: 95.5,
+            //                     height: 95.5,
+            //                     child: Image.file(
+            //                       File(e.path),
+            //                       fit: BoxFit.cover,
+            //                     ),
+            //                   ),
+            //                 ),
+            //               ],
+            //             ),
+            //           )
+            //           .toList()
+            //       : [],
+            // ),
+            selectedImages != null
+                ? Wrap(
+                    spacing: 12.0,
+                    children: List<Widget>.generate(
+                      selectedImages!.length,
+                      (index) {
+                        return Stack(
+                          alignment: Alignment.topRight,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(24.0),
+                              child: SizedBox(
+                                // margin: const EdgeInsets.only(right: 8.0),
+                                width: 95.5,
+                                height: 95.5,
+                                child: Image.file(
+                                  File(selectedImages![index].path),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      )
-                      .toList()
-                  : [],
-            ),
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  selectedImages!.removeAt(index);
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  LucideIcons.minusCircle,
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  )
+                : Container()
           ],
         )
       ],
@@ -601,6 +669,7 @@ class _AddBusinessState extends State<AddBusiness> {
                   ?.map(
                     (e) => DropdownMenuItem(
                       value: e["value"] as String,
+                      enabled: e["value"] != "",
                       child: Text(e["name"]),
                     ),
                   )
@@ -609,28 +678,25 @@ class _AddBusinessState extends State<AddBusiness> {
               onChanged: (String? newValue) {
                 setState(() {
                   dropdownValue = newValue!;
-                  debugPrint(dropdownValue);
                 });
               },
               focusNode: _categoryFocus,
               decoration: InputDecoration(
-                label: const Text("Category"),
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16.0),
                 filled: true,
                 fillColor: kGlicoInputFill,
-                border: UnderlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                  borderSide: const BorderSide(color: borderColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(60.0),
+                  borderSide: BorderSide.none,
                 ),
-                // label: const Text("Category"),
-                floatingLabelStyle:
-                    theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
                 hintText: "Category",
-                hintStyle: const TextStyle(color: Colors.grey),
-                floatingLabelBehavior: FloatingLabelBehavior.always,
+                hintStyle: TextStyle(
+                  color: dropdownValue == "" ? theme.hintColor : Colors.black,
+                ),
+                floatingLabelBehavior: FloatingLabelBehavior.auto,
               ),
-              style: theme.textTheme.titleLarge, // validator: (val) =>
+              style: theme.textTheme.titleLarge,
             );
           }),
     );
@@ -638,8 +704,9 @@ class _AddBusinessState extends State<AddBusiness> {
 
   Widget _insuraneTypePicker(ThemeData theme) {
     final List<Map<InsuranceType, String>> insuranceTypes = [
+      {InsuranceType.unselected: "Insurance type"},
       {InsuranceType.business: "Business"},
-      {InsuranceType.products: "Products"}
+      {InsuranceType.products: "Products"},
     ];
 
     List<DropdownMenuItem<InsuranceType>> buildDropdownMenuItems() {
@@ -649,7 +716,13 @@ class _AddBusinessState extends State<AddBusiness> {
 
         return DropdownMenuItem<InsuranceType>(
           value: insuranceType,
-          child: Text(value),
+          enabled: value != "Insurance type",
+          child: Text(
+            value,
+            style: TextStyle(
+                color:
+                    value == "Insurance type" ? theme.hintColor : Colors.black),
+          ),
         );
       }).toList();
     }
@@ -664,24 +737,20 @@ class _AddBusinessState extends State<AddBusiness> {
             insuranceTypeValue = newValue!;
           });
         },
-        focusNode: _categoryFocus,
         decoration: InputDecoration(
-          label: const Text("Category"),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-          filled: true,
-          fillColor: kGlicoInputFill,
-          border: UnderlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: const BorderSide(color: borderColor),
-          ),
-          // label: const Text("Category"),
-          floatingLabelStyle:
-              theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-          hintText: "Insurance type",
-          hintStyle: const TextStyle(color: Colors.grey),
-          floatingLabelBehavior: FloatingLabelBehavior.always,
-        ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 16.0),
+            filled: true,
+            fillColor: kGlicoInputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(60.0),
+              borderSide: BorderSide.none,
+            ),
+            floatingLabelStyle:
+                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
+            hintText: "Insurance type",
+            hintStyle: const TextStyle(color: Colors.grey),
+            floatingLabelBehavior: FloatingLabelBehavior.auto),
         style: theme.textTheme.titleLarge, // validator: (val) =>
       ),
     );
@@ -694,7 +763,7 @@ class _AddBusinessState extends State<AddBusiness> {
       return Padding(
         padding: Insets.verticalPadding8,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(25.0),
           child: Container(
             height: 240.0,
             decoration: BoxDecoration(
@@ -713,83 +782,68 @@ class _AddBusinessState extends State<AddBusiness> {
 
   Widget _phoneNumberWidgets(ThemeData theme) {
     return ListView.builder(
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _phoneInputControllers.length,
-      itemBuilder: ((context, index) => Row(
-            children: [
-              Flexible(
-                child: Padding(
-                  padding: Insets.verticalPadding8,
-                  child: TextFormField(
-                    enabled: isLoading == false,
-                    focusNode: _phoneFocuses[index],
-                    onEditingComplete: () => FocusScope.of(context).nextFocus(),
-                    controller: _phoneInputControllers[index],
-                    decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 8.0),
-                        filled: true,
-                        fillColor: kGlicoInputFill,
-                        border: UnderlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                          borderSide: const BorderSide(color: borderColor),
-                        ),
-                        floatingLabelStyle: theme.textTheme.titleLarge!
-                            .copyWith(color: Colors.grey),
-                        hintText: "Phone number",
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        floatingLabelBehavior: FloatingLabelBehavior.auto),
-                    style: theme.textTheme.titleLarge,
-                    validator: (val) => !phoneNumberPattern.hasMatch(val!)
-                        ? "Invalid phone number"
-                        : null,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                  ),
-                ),
-              ),
-              Spacing.horizontalSpace8,
-              FloatingActionButton(
-                heroTag: "remove phone number $index",
-                elevation: 0.0,
-                onPressed: () => _removePhoneNumber(index),
-                child: Icon(
-                  LucideIcons.minus,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              Spacing.horizontalSpace8,
-              FloatingActionButton(
-                heroTag: "add phone number $index",
-                elevation: 0.0,
-                onPressed: () => _addPhoneNumber(),
-                child: Icon(
-                  LucideIcons.plus,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              )
-            ],
-          )),
+      itemBuilder: (context, index) => Row(
+        children: [
+          Flexible(
+            child: InputField(
+              isLoading: isLoading,
+              hintText: "Phone number",
+              focusNode: _phoneFocuses[index],
+              onEditingComplete: () => FocusScope.of(context).nextFocus(),
+              controller: _phoneInputControllers[index],
+              validator: (val) => !phoneNumberPattern.hasMatch(val!)
+                  ? "Invalid phone number"
+                  : null,
+              keyboardType: TextInputType.phone,
+            ),
+          ),
+          Spacing.horizontalSpace8,
+          FloatingActionButton(
+            shape: const CircleBorder(),
+            backgroundColor: kGlicoInputFill,
+            heroTag: "remove phone number $index",
+            elevation: 0.0,
+            onPressed: () => _removePhoneNumber(index),
+            child: const Icon(
+              LucideIcons.minus,
+              color: Colors.black54,
+            ),
+          ),
+          Spacing.horizontalSpace8,
+          FloatingActionButton(
+            shape: const CircleBorder(),
+            backgroundColor: kGlicoInputFill,
+            heroTag: "add phone number $index",
+            elevation: 0.0,
+            onPressed: () => _addPhoneNumber(),
+            child: const Icon(
+              LucideIcons.plus,
+              color: Colors.black54,
+            ),
+          )
+        ],
+      ),
     );
   }
 
   Widget submitButton(ThemeData theme) {
-    return Container(
-      width: ScreenSize.width,
-      constraints: const BoxConstraints(maxWidth: 30),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            style: ButtonStyle(
-                padding: MaterialStateProperty.all(
-                    const EdgeInsets.symmetric(horizontal: 80, vertical: 20))),
-            // margin: Insets.verticalPadding12,
-            onPressed: () async =>
-                !isLoading && _addBusinessFormKey.currentState!.validate()
-                    ? await addBusiness()
-                    : null,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          height: 54,
+          width: 192,
+          child: ElevatedButton(
+            onPressed: () async => !isLoading &&
+                    _addBusinessFormKey.currentState!.validate() &&
+                    dropdownValue != "" &&
+                    insuranceTypeValue != InsuranceType.unselected
+                ? await addBusiness()
+                : null,
             child: isLoading
                 ? Center(
                     child: CircularProgressIndicator(
@@ -802,8 +856,26 @@ class _AddBusinessState extends State<AddBusiness> {
                         .copyWith(color: Colors.white),
                   ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+}
+
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    final format = NumberFormat("#,###");
+    final newText = format.format(int.parse(newValue.text.replaceAll(',', '')));
+
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

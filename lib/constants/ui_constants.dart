@@ -79,6 +79,15 @@ class Insets {
   static EdgeInsets get verticalPadding12 => EdgeInsets.symmetric(
         vertical: Doubles.med,
       );
+  static EdgeInsets get verticalPadding16 => EdgeInsets.symmetric(
+        vertical: Doubles.lg,
+      );
+  static EdgeInsets get verticalPadding24 => EdgeInsets.symmetric(
+        vertical: Doubles.base,
+      );
+  static EdgeInsets get verticalPadding48 => EdgeInsets.symmetric(
+        vertical: Doubles.xl,
+      );
   // Offset, used for the edge of the window, or to separate large sections in the app
   static double get offset => 40 * offsetScale;
 }
@@ -112,7 +121,7 @@ class Spacing {
 }
 
 class DateTimeFormats {
-  static DateFormat day = DateFormat('d');//10
+  static DateFormat day = DateFormat('d'); //10
   static DateFormat dateFormat = DateFormat('EEE, MMM d'); //Wed, Feb 10
   static DateFormat dayMonth = DateFormat('d MMM'); //10 Feb
   static DateFormat weekday = DateFormat('EEE'); //Wed
@@ -125,6 +134,10 @@ class DateTimeFormats {
   static DateFormat shortDateTime = DateFormat('EEE, MMM d; HH:mm');
   static DateFormat hourMinute = DateFormat('Hm');
   static DateFormat longTimeFormat = DateFormat('jm');
+}
+
+class NumberFormats {
+  static NumberFormat formattedNumberFormat = NumberFormat("#,###");
 }
 
 const divider12 = Divider(

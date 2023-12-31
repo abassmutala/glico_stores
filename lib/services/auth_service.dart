@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:glico_stores/models/user.dart';
 import 'package:glico_stores/services/database_service.dart';
 import 'package:glico_stores/utils/utilities.dart';
+import 'package:uuid/uuid.dart';
 
 abstract class AuthBase {
   Stream<User?> get authStateChanges;
@@ -13,6 +14,7 @@ abstract class AuthBase {
     required String phone,
     required String email,
     required String password,
+    required Map deviceInfo,
   });
   Future<User> signInWithEmail(
     String email,
@@ -76,6 +78,7 @@ class AuthService implements AuthBase {
     required String phone,
     required String email,
     required String password,
+    required Map deviceInfo
   }) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -83,18 +86,24 @@ class AuthService implements AuthBase {
         password: password,
       );
       final user = credential.user!;
+      final uniqueCode = const Uuid().v4();
 
       User newUser = User(
-          uid: user.uid,
-          firstName: firstName,
-          lastName: lastName,
-          email: email,
-          phone: phone,
-          color: Utilities.generateRandomColor(),
-          dateJoined: user.metadata.creationTime.toString(),
-          addedBusinesses: []);
+        uid: user.uid,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: phone,
+        color: Utilities.generateRandomColor(),
+        dateJoined: user.metadata.creationTime.toString(),
+        addedBusinesses: [],
+        deviceInfo: deviceInfo,
+        uniqueCode: Utilities.generateUniqueCode(uniqueCode)
+      );
 
       await DatabaseService().createProfile(newUser);
+
+      // TODO: Send unique credential
 
       return _userFromFirebase(user)!;
     } on PlatformException catch (e) {
@@ -113,7 +122,7 @@ class AuthService implements AuthBase {
       final user = credential.user;
       await _populateCurrentUser(user);
       return _userFromFirebase(user)!;
-    } on PlatformException catch (e) {
+    } on auth.FirebaseException catch (e) {
       throw PlatformException(
         code: e.code,
         message: e.message,

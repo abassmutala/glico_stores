@@ -4,6 +4,7 @@ import 'package:glico_stores/views/auth/forgot_password.dart';
 import 'package:glico_stores/views/auth/profile_view.dart';
 import 'package:glico_stores/views/auth/sign_in.dart';
 import 'package:glico_stores/views/auth/sign_up.dart';
+import 'package:glico_stores/views/auth/welcome_view.dart';
 import 'package:glico_stores/views/business/add_business.dart';
 import 'package:glico_stores/views/business/business_details.dart';
 import 'package:glico_stores/views/business/businesses_list.dart';
@@ -11,6 +12,11 @@ import 'package:glico_stores/views/business/edit_details.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
+    case welcomeViewRoute:
+      return _getPageRoute(
+        routeName: settings.name!,
+        viewToShow: const Welcome(),
+      );
     case businessesListRoute:
       return _getPageRoute(
         routeName: settings.name!,

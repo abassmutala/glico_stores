@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glico_stores/locator.dart';
 import 'package:glico_stores/services/auth_service.dart';
-import 'package:glico_stores/views/auth/sign_in.dart';
+import 'package:glico_stores/views/auth/welcome_view.dart';
 import 'package:glico_stores/views/business/businesses_list.dart';
 
 import '../../models/user.dart';
@@ -38,7 +38,7 @@ class LandingPage extends StatelessWidget {
         builder: (context, snapshot) {
           User? user = snapshot.data;
           if (user == null) {
-            return const SignIn();
+            return const Welcome();
           }
           return const BusinessesList();
         });

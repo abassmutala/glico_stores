@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:glico_stores/constants/ui_constants.dart';
 import 'package:glico_stores/utils/enums.dart';
+import 'package:uuid/uuid.dart';
 
 class Utilities {
   static String capitalize(String text) {
@@ -22,6 +24,9 @@ class Utilities {
   }
 
   static String getInitials(String name) {
+    if (!name.contains(" ")) {
+      return name[0].toUpperCase();
+    }
     final names = name.split(" ");
     final name1Initial = names.length > 1 ? names[0][0] : names[0];
     final name2Initial = names.length > 1 ? names[names.length - 1][0] : "";
@@ -39,6 +44,25 @@ class Utilities {
       orElse: () => InsuranceType.business, //null
     );
     return insuranceType;
+  }
+
+  static String convertbusinessCategoryToText(String categoryCode) {
+    final Map<String, String> categories = {
+      "other": "Other",
+      "food_supplies": "Food supplies",
+      "fashion": "Fashion",
+      "arts": "Arts",
+      "electronics": "Electronics",
+      "stationery": "Stationery",
+      "agric_supplies": "Agricultural supplies",
+      "home_services": "Home services",
+      "home_supplies": "Home supplies",
+      "repair_construction": "Repair and construction",
+      "commercial_equipment_tools": "Commercial equipment and tools",
+      "health_beauty": "Health and beauty"
+    };
+
+    return categories[categoryCode] ?? categoryCode;
   }
 
   static String generateRandomColor() {
@@ -71,6 +95,63 @@ class Utilities {
     ); //.substring(1, 7), radix: 16) + 0xFF000000);
   }
 
+  static String formatNumber(String val) {
+    if (val.isEmpty) return '';
+
+    // Remove all non-digit characters except the last dot (if any)
+    String sanitizedValue = val.replaceAll(RegExp(r'[^\d.]'), '');
+
+    // Parse the sanitized value to a number
+    double number = double.tryParse(sanitizedValue) ?? 0;
+
+    // Format the number with commas
+    return NumberFormats.formattedNumberFormat.format(number);
+  }
+
+  // static String formatNumber(String value) {
+  //   if (value.isEmpty) return '';
+
+  //   // Remove all non-digit characters except the last dot (if any)
+  //   String sanitizedValue = value.replaceAll(RegExp(r'[^\d.]'), '');
+
+  //   // Split the value into integer and decimal parts
+  //   List<String> parts = sanitizedValue.split('.');
+  //   String integerPart = parts[0];
+  //   String decimalPart = parts.length > 1 ? parts[1] : '';
+
+  //   // Add commas to the integer part
+  //   String formattedInteger = '';
+  //   for (int i = 0; i < integerPart.length; i++) {
+  //     formattedInteger += integerPart[i];
+  //     if ((integerPart.length - i - 1) % 3 == 0 &&
+  //         i != integerPart.length - 1) {
+  //       formattedInteger += ',';
+  //     }
+  //   }
+
+  //   // Combine integer and decimal parts
+  //   String formattedValue = formattedInteger;
+  //   if (decimalPart.isNotEmpty) {
+  //     formattedValue += '.$decimalPart';
+  //   }
+
+  //   return formattedValue;
+  // }
+  static String generateUserUuid() {
+    var uuid = const Uuid();
+    return uuid.v4();
+  }
+
+  static int generateUniqueCode(String text) {
+    // Remove all non-digit characters (letters) from the string
+    final digitsOnly = text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Limit it to the first 6 numbers
+    final result = digitsOnly.substring(0, 6);
+
+    return int.parse(result);
+  }
+
   static generateRandom8DigitUid() {
     Random random = Random();
     String uuid = "";
@@ -88,68 +169,32 @@ class Utilities {
     return code;
   }
 
-  static double calculateDistance({
-    required double lat1,
-    required double lon1,
-    required double lat2,
-    required double lon2,
-  }) {
-    var p = 0.017453292519943295;
-    var c = cos;
-    var a = 0.5 -
-        c((lat2 - lat1) * p) / 2 +
-        c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p)) / 2;
-    return 12742 * asin(sqrt(a));
-  }
-
-  // unit = the unit you desire for results
-  //     where: 'M' is statute miles (default)
-  //            'K' is kilometers
-  //            'N' is nautical miles
-  static String distance({
-    required double lat1,
-    required double lon1,
-    required double lat2,
-    required double lon2,
-    required String unit,
-  }) {
-    double theta = lon1 - lon2;
-    double dist = sin(deg2rad(lat1)) * sin(deg2rad(lat2)) +
-        cos(deg2rad(lat1)) * cos(deg2rad(lat2)) * cos(deg2rad(theta));
-    dist = acos(dist);
-    dist = rad2deg(dist);
-    dist = dist * 60 * 1.1515;
-    if (unit == 'K') {
-      dist = dist * 1.609344;
-    } else if (unit == 'N') {
-      dist = dist * 0.8684;
-    }
-    return dist.toStringAsFixed(2);
-  }
-
-  static double deg2rad(double deg) {
-    return (deg * pi / 180.0);
-  }
-
-  static double rad2deg(double rad) {
-    return (rad * 180.0 / pi);
-  }
-
-  // static Color generateRandomColor() {
-  //   Random random = Random();
-  //   double randomDouble = random.nextDouble();
-  //   return Color((randomDouble * 0xFFFFFF).toInt()
-  //   ).withOpacity(1.0);
-  // }
-
-  // static Color generateRandomColor() {
-  //   Random random = Random();
-  //   return Color.fromARGB(
-  //     255,
-  //     random.nextInt(256),
-  //     random.nextInt(256),
-  //     random.nextInt(256),
-  //   );
+  // static getDeviceInfo() async {
+  //   try {
+  //     final platformVersion = await DeviceInformation.platformVersion;
+  //     final imeiNo = await DeviceInformation.deviceIMEINumber;
+  //     final modelName = await DeviceInformation.deviceModel;
+  //     final manufacturer = await DeviceInformation.deviceManufacturer;
+  //     final apiLevel = await DeviceInformation.apiLevel;
+  //     final deviceName = await DeviceInformation.deviceName;
+  //     final productName = await DeviceInformation.productName;
+  //     final cpuType = await DeviceInformation.cpuName;
+  //     final hardware = await DeviceInformation.hardware;
+  //     final deviceInfo = DeviceInfo(
+  //       platformVersion: platformVersion,
+  //       imeiNo: imeiNo,
+  //       modelName: modelName,
+  //       manufacturer: manufacturer,
+  //       apiLevel: apiLevel,
+  //       deviceName: deviceName,
+  //       productName: productName,
+  //       cpuType: cpuType,
+  //       hardware: hardware,
+  //     );
+  //     return deviceInfo;
+  //   } on PlatformException catch (e) {
+  //     debugPrint(e.message);
+  //   }
   // }
 
   // static Future<PickedFile> pickImage(BuildContext context,

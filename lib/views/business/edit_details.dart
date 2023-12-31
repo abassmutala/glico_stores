@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:glico_stores/constants/app_colors.dart';
 import 'package:glico_stores/constants/regex_patterns.dart';
 import 'package:glico_stores/constants/route_names.dart';
@@ -16,7 +17,10 @@ import 'package:glico_stores/services/location_service.dart';
 import 'package:glico_stores/services/navigation_service.dart';
 import 'package:glico_stores/utils/enums.dart';
 import 'package:glico_stores/utils/utilities.dart';
+import 'package:glico_stores/views/business/add_business.dart';
 import 'package:glico_stores/views/map_view.dart';
+import 'package:glico_stores/widgets/input_field.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class EditDetails extends StatefulWidget {
@@ -61,6 +65,7 @@ class _EditDetailsState extends State<EditDetails>
   late BusinessLocation? currentAddress;
   late List<File>? selectedImages;
   List<File> filesList = [];
+  late List? downloadedPhotos;
 
   final DatabaseService db = locator<DatabaseService>();
   final NavigationService navService = locator<NavigationService>();
@@ -80,7 +85,9 @@ class _EditDetailsState extends State<EditDetails>
 
   Future getCurrentLocation() async {
     try {
-      isLoading = true;
+      setState(() {
+        isLoading = true;
+      });
       currentLocation = await locationService.getAddressFromCoordinates();
       _addressController.text =
           "${currentLocation?.city}, ${currentLocation?.region}";
@@ -88,10 +95,13 @@ class _EditDetailsState extends State<EditDetails>
         coordinates =
             GeoPoint(currentLocation!.latitude!, currentLocation!.longitude!);
       });
-
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
     } on PlatformException catch (e) {
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
       debugPrint(e.message);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -162,29 +172,31 @@ class _EditDetailsState extends State<EditDetails>
     super.initState();
     _controller = AnimationController(vsync: this);
     _phoneInputControllers.isEmpty ? _addPhoneNumber() : null;
-    _fetchBusinessData().then((business) => {
-          _nameController = TextEditingController(text: business.name!),
-          _ownerController = TextEditingController(text: business.owner!),
-          _addressController = TextEditingController(text: business.address!),
-          coordinates = business.coordinates,
-          dropdownValue = business.category!,
-          insuranceTypeValue = Utilities.convertStringToInsuranceTypeEnum(
-              business.insuranceType!),
-          _commentController = TextEditingController(text: business.comment!),
-          _assetValueController = TextEditingController(
-              text: business.estimatedAssetValue!.toString()),
-          _premiumValueController =
-              TextEditingController(text: business.premium!.toString()),
-          _phoneInputControllers = business.phone!
-              .map((e) => TextEditingController(text: e.toString()))
-              .toList(),
-          selectedImages =
-              business.photos!.map((e) => File(e as String)).toList(),
-          convertPathsToFiles(business.photos!),
-        });
-    // isLoading = false;
-    // print("photos: ${widget.args.photos}");
-    // print("photos1: $selectedImages");
+    _fetchBusinessData()
+        .then((business) => {
+              _nameController = TextEditingController(text: business.name!),
+              _ownerController = TextEditingController(text: business.owner!),
+              _addressController =
+                  TextEditingController(text: business.address!),
+              coordinates = business.coordinates,
+              dropdownValue = business.category!,
+              insuranceTypeValue = Utilities.convertStringToInsuranceTypeEnum(
+                  business.insuranceType!),
+              _commentController =
+                  TextEditingController(text: business.comment!),
+              _assetValueController = TextEditingController(
+                  text: business.estimatedAssetValue!.toString()),
+              _premiumValueController =
+                  TextEditingController(text: business.premium!.toString()),
+              _phoneInputControllers = business.phone!
+                  .map((e) => TextEditingController(text: e.toString()))
+                  .toList(),
+              downloadedPhotos = business.photos,
+              selectedImages =
+                  business.photos!.map((e) => File(e as String)).toList(),
+              convertPathsToFiles(business.photos!),
+            })
+        .then((value) => print(downloadedPhotos));
   }
 
   @override
@@ -205,44 +217,73 @@ class _EditDetailsState extends State<EditDetails>
 
     return isLoading
         ? const Center(child: CircularProgressIndicator())
-        : Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("images/map_bg.png"),
+        : Stack(
+            children: [
+              Image.asset(
+                "images/rectangle.png",
                 fit: BoxFit.cover,
               ),
-              color: Color(0xFFe5e9f2),
-            ),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                title: const Text("Edit business"),
+              const ModalBarrier(
+                color: modalBg,
               ),
-              body: Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(
-                      "images/map_bg.png",
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: AppBar(
+                  shadowColor: Colors.transparent,
+                  automaticallyImplyLeading: false,
+                  toolbarHeight: kToolbarHeight * 2.5,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Positioned.fill(
+                          child: Image.asset(
+                            "images/rectangle.png",
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          ),
+                        ),
+                        const ModalBarrier(
+                          color: Colors.black45,
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 320,
+                              child: SvgPicture.asset(
+                                  "images/glico_general_logo.svg"),
+                            ),
+                            Text(
+                              "Edit business",
+                              style: theme.textTheme.headlineSmall!.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
                     ),
-                    fit: BoxFit.cover,
                   ),
                 ),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 450,
+                body: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: ScreenSize.width >= 600
+                          ? const Radius.circular(60)
+                          : const Radius.circular(25),
+                    ),
+                    color: Colors.white,
+                  ),
+                  child: Container(
+                    margin: EdgeInsets.symmetric(
+                      horizontal: ScreenSize.width >= 600 ? 64 : 16,
                     ),
                     child: ListView(
                       shrinkWrap: true,
-                      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 48.0),
+                      padding: const EdgeInsets.symmetric(vertical: 32),
                       children: [
-                        Spacing.verticalSpace8,
-                        SizedBox(
-                          height: 120,
-                          child: Image.asset("images/glicogeneral_logo.png"),
-                        ),
-                        Spacing.verticalSpace12,
                         Form(
                           key: _editBusinessFormKey,
                           child: Column(
@@ -263,135 +304,96 @@ class _EditDetailsState extends State<EditDetails>
                           ),
                         ),
                         Spacing.verticalSpace16,
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ElevatedButton(
-                              // margin: Insets.verticalPadding12,
-                              onPressed: () async {
-                                return !isLoading &&
-                                        _editBusinessFormKey.currentState!
-                                            .validate()
-                                    ? await updateBusinessData(widget.uid)
-                                    : null;
-                              },
-                              // margin: Insets.verticalPadding12,
-                              child: isLoading
-                                  ? CircularProgressIndicator(
-                                      color: theme.colorScheme.secondary,
-                                    )
-                                  : Text(
-                                      "Update",
-                                      style: theme.textTheme.titleLarge!
-                                          .copyWith(color: Colors.white),
-                                    ),
-                            ),
-                          ],
-                        ),
+                        updateButton(theme),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           );
   }
 
+  Widget updateButton(ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          height: 54,
+          width: 192,
+          child: ElevatedButton(
+            // margin: Insets.verticalPadding12,
+            onPressed: () async {
+              return !isLoading && _editBusinessFormKey.currentState!.validate()
+                  ? await updateBusinessData(widget.uid)
+                  : null;
+            },
+            // margin: Insets.verticalPadding12,
+            child: isLoading
+                ? CircularProgressIndicator(
+                    color: theme.colorScheme.secondary,
+                  )
+                : Text(
+                    "Update",
+                    style: theme.textTheme.titleLarge!
+                        .copyWith(color: Colors.white),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _updatePremium(String value) {
+    if (value.isEmpty) {
+      _premiumValueController.text = '';
+    } else {
+      double inputValue = double.tryParse(value.replaceAll(',', '')) ?? 0;
+      double result = inputValue * 0.3;
+
+      // Format the result with thousand separator and 2 decimal places
+      final formattedResult = NumberFormat("#,###.##")
+          .format(double.parse(result.toStringAsFixed(2)));
+      _premiumValueController.text = formattedResult;
+    }
+  }
+
   Widget _nameInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _nameFocus,
-        onEditingComplete: () => _nameEditingComplete(),
-        controller: _nameController,
-        decoration: InputDecoration(
-            label: const Text("Business name"),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of business"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Business name",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) =>
-            val!.length < 2 ? "Business name is too short" : null,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      padding: Insets.verticalPadding16,
+      autofocus: true,
+      focusNode: _nameFocus,
+      onEditingComplete: () => _nameEditingComplete(),
+      controller: _nameController,
+      labelText: "Business name",
+      validator: (val) => val!.length < 2 ? "Business name is too short" : null,
     );
   }
 
   Widget _ownerInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _ownerFocus,
-        onEditingComplete: () => _ownerEditingComplete(),
-        controller: _ownerController,
-        decoration: InputDecoration(
-            label: const Text("Owner's name"),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of owner"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Owner's name",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 3 ? "Name is too short" : null,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      padding: Insets.verticalPadding16,
+      focusNode: _ownerFocus,
+      onEditingComplete: () => _ownerEditingComplete(),
+      controller: _ownerController,
+      labelText: "Owner's name",
+      validator: (val) => val!.length < 3 ? "Name is too short" : null,
     );
   }
 
   Widget _addressInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _addressFocus,
-        onEditingComplete: () => _addressEditingComplete(),
-        controller: _addressController,
-        decoration: InputDecoration(
-            label: const Text("Address"),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Tap to find address",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 3 ? "Invalid address" : null,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.next,
-        readOnly: true,
-        onTap: () => getCurrentLocation(),
-      ),
+    return InputField(
+      isLoading: isLoading,
+      padding: Insets.verticalPadding16,
+      focusNode: _addressFocus,
+      onEditingComplete: () => _addressEditingComplete(),
+      controller: _addressController,
+      labelText: "Address",
+      validator: (val) => val!.length < 3 ? "Invalid address" : null,
+      readOnly: true,
+      onTap: () => getCurrentLocation(),
     );
   }
 
@@ -400,9 +402,9 @@ class _EditDetailsState extends State<EditDetails>
       return Container();
     } else {
       return Padding(
-        padding: Insets.verticalPadding8,
+        padding: Insets.verticalPadding16,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(25.0),
           child: Container(
             height: 240.0,
             decoration: BoxDecoration(
@@ -421,7 +423,7 @@ class _EditDetailsState extends State<EditDetails>
 
   Widget _categoryInputField(ThemeData theme) {
     return Padding(
-      padding: Insets.verticalPadding8,
+      padding: Insets.verticalPadding16,
       child: StreamBuilder<List<Map<String, dynamic>>>(
           stream: db.getCategoriesStream(),
           builder: (context, snapshot) {
@@ -444,21 +446,22 @@ class _EditDetailsState extends State<EditDetails>
               },
               focusNode: _categoryFocus,
               decoration: InputDecoration(
-                label: const Text("Category"),
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16.0),
                 filled: true,
                 fillColor: kGlicoInputFill,
-                border: UnderlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                  borderSide: const BorderSide(color: borderColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(60.0),
+                  borderSide: BorderSide.none,
                 ),
-                // label: const Text("Category"),
                 floatingLabelStyle:
                     theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-                hintText: "Category",
+                label: Container(
+                  padding: const EdgeInsets.only(bottom: 36),
+                  child: const Text("Nature of business"),
+                ),
                 hintStyle: const TextStyle(color: Colors.grey),
-                floatingLabelBehavior: FloatingLabelBehavior.always,
+                floatingLabelBehavior: FloatingLabelBehavior.auto,
               ),
               style: theme.textTheme.titleLarge, // validator: (val) =>
               //     !phoneNumberPattern.hasMatch(val!) ? "Invalid phone number" : null,
@@ -468,94 +471,61 @@ class _EditDetailsState extends State<EditDetails>
   }
 
   Widget _commentInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _commentFocus,
-        onEditingComplete: () => _commentEditingComplete(),
-        controller: _commentController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Comment",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto,
-            counterStyle: const TextStyle(color: Colors.white)),
-        style: theme.textTheme.titleLarge,
-        // validator: (val) =>
-        //     val!.length < 2 ? "Business name is too short" : null,
-        keyboardType: TextInputType.text,
-        maxLines: 8,
-        maxLength: 250,
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      padding: Insets.verticalPadding16,
+      focusNode: _commentFocus,
+      onEditingComplete: () => _commentEditingComplete(),
+      controller: _commentController,
+      labelText: "Comment",
+      maxLines: 6,
+      maxLength: 250,
+      borderRadius: 25.0,
     );
   }
 
   Widget _phoneNumberWidgets(ThemeData theme) {
     return ListView.builder(
+      padding: EdgeInsets.zero,
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemCount: _phoneInputControllers.length,
       itemBuilder: (context, index) => Row(
         children: [
           Flexible(
-            child: Padding(
-              padding: Insets.verticalPadding8,
-              child: TextFormField(
-                enabled: isLoading == false,
-                onEditingComplete: () => FocusScope.of(context).nextFocus(),
-                controller: _phoneInputControllers[index],
-                decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 8.0),
-                    filled: true,
-                    fillColor: kGlicoInputFill,
-                    border: UnderlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                      borderSide: const BorderSide(color: borderColor),
-                    ),
-                    floatingLabelStyle: theme.textTheme.titleLarge!
-                        .copyWith(color: Colors.grey),
-                    hintText: "Phone number",
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    floatingLabelBehavior: FloatingLabelBehavior.auto),
-                style: theme.textTheme.titleLarge,
-                validator: (val) => !phoneNumberPattern.hasMatch(val!)
-                    ? "Invalid phone number"
-                    : null,
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.next,
-              ),
+            child: InputField(
+              padding: Insets.verticalPadding16,
+              onEditingComplete: () => FocusScope.of(context).nextFocus(),
+              controller: _phoneInputControllers[index],
+              labelText: "Phone number ${index + 1}",
+              validator: (val) => !phoneNumberPattern.hasMatch(val!)
+                  ? "Invalid phone number"
+                  : null,
+              keyboardType: TextInputType.phone,
             ),
           ),
           Spacing.horizontalSpace8,
           FloatingActionButton(
+            shape: const CircleBorder(),
+            backgroundColor: kGlicoInputFill,
             heroTag: "remove phone number $index",
             elevation: 0.0,
             onPressed: () => _removePhoneNumber(index),
-            child: Icon(
+            child: const Icon(
               LucideIcons.minus,
-              color: Theme.of(context).colorScheme.primary,
+              color: Colors.black54,
             ),
           ),
           Spacing.horizontalSpace8,
           FloatingActionButton(
+            shape: const CircleBorder(),
+            backgroundColor: kGlicoInputFill,
             heroTag: "add phone number $index",
             elevation: 0.0,
             onPressed: () => _addPhoneNumber(),
-            child: Icon(
+            child: const Icon(
               LucideIcons.plus,
-              color: Theme.of(context).colorScheme.primary,
+              color: Colors.black54,
             ),
           )
         ],
@@ -568,81 +538,40 @@ class _EditDetailsState extends State<EditDetails>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Add photos of business",
-          style: theme.textTheme.titleLarge!.copyWith(color: Colors.white),
+          "Business' photos",
+          style: theme.textTheme.titleMedium!.copyWith(color: Colors.black54),
+          textAlign: TextAlign.center,
         ),
         Spacing.verticalSpace8,
         Wrap(
           spacing: 12.0,
-          children: [
-            SizedBox(
-              width: 95.5,
-              height: 95.5,
-              child: FloatingActionButton.large(
-                heroTag: "business photos",
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.3),
-                elevation: 0.0,
-                child: Icon(
-                  LucideIcons.plus,
-                  color: theme.colorScheme.primary,
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => SimpleDialog(
-                      title: const Text("Choose photos"),
-                      // height: kToolbarHeight * 2,
-                      children: [
-                        ListTile(
-                          // dense: true,
-                          leading: const Icon(LucideIcons.camera),
-                          title: const Text("Take a photo"),
-                          onTap: () async {
-                            navService.pop();
-                            //TODO: _takeCameraImages();
-                          },
+          children: downloadedPhotos!.isNotEmpty
+              ? downloadedPhotos!
+                  .map(
+                    (e) => ClipRRect(
+                      borderRadius: BorderRadius.circular(24.0),
+                      child: SizedBox(
+                        // margin: const EdgeInsets.only(right: 8.0),
+                        width: 100,
+                        height: 100,
+                        child: CachedNetworkImage(
+                          imageUrl: e,
+                          fit: BoxFit.cover,
                         ),
-                        ListTile(
-                          // dense: true,
-                          leading: const Icon(LucideIcons.image),
-                          title: const Text("Choose from gallery"),
-                          onTap: () {
-                            navService.pop();
-                            //TODO: _pickGalleryImages();
-                          },
-                        ),
-                      ],
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
-            Wrap(
-              spacing: 12.0,
-              children: selectedImages != null
-                  ? selectedImages!
-                      .map(
-                        (e) => ClipRRect(
-                          borderRadius: BorderRadius.circular(12.0),
-                          child: SizedBox(
-                            // margin: const EdgeInsets.only(right: 8.0),
-                            width: 95.5,
-                            height: 95.5,
-                            child: CachedNetworkImage(
-                              fit: BoxFit.cover,
-                              imageUrl: e.path,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList()
-                  : [],
-            ),
-          ],
-        )
+                  )
+                  .toList()
+              : [
+                  SizedBox(
+                    width: ScreenSize.width,
+                    child: const Text(
+                      "No photos added for this business",
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                ],
+        ),
       ],
     );
   }
@@ -666,7 +595,7 @@ class _EditDetailsState extends State<EditDetails>
     }
 
     return Padding(
-      padding: Insets.verticalPadding8,
+      padding: Insets.verticalPadding16,
       child: DropdownButtonFormField<InsuranceType>(
         items: buildDropdownMenuItems(),
         value: insuranceTypeValue,
@@ -677,22 +606,23 @@ class _EditDetailsState extends State<EditDetails>
         },
         focusNode: _categoryFocus,
         decoration: InputDecoration(
-          label: const Text("Category"),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-          filled: true,
-          fillColor: kGlicoInputFill,
-          border: UnderlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: const BorderSide(color: borderColor),
-          ),
-          // label: const Text("Category"),
-          floatingLabelStyle:
-              theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-          hintText: "Insurance type",
-          hintStyle: const TextStyle(color: Colors.grey),
-          floatingLabelBehavior: FloatingLabelBehavior.always,
-        ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 16.0),
+            filled: true,
+            fillColor: kGlicoInputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(60.0),
+              borderSide: BorderSide.none,
+            ),
+            floatingLabelStyle:
+                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
+            label: Container(
+              padding: const EdgeInsets.only(bottom: 36.0),
+              child: const Text(
+                "Insurance type",
+              ),
+            ),
+            floatingLabelBehavior: FloatingLabelBehavior.auto),
         style: theme.textTheme.titleLarge, // validator: (val) =>
         //     !phoneNumberPattern.hasMatch(val!) ? "Invalid phone number" : null,
       ),
@@ -700,68 +630,29 @@ class _EditDetailsState extends State<EditDetails>
   }
 
   Widget _estimatedAssetValueInputField(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        focusNode: _assetValueFocus,
-        onEditingComplete: () => _assetValueEditingComplete(),
-        controller: _assetValueController,
-        onChanged: (val) => _premiumValueController.text =
-            _assetValueController.text != ""
-                ? (double.parse(_assetValueController.text) * 0.025).toString()
-                : "",
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of owner"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Estimated cost of assets (GH¢)",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        validator: (val) => val!.length < 3 ? "Name is too short" : null,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      padding: Insets.verticalPadding16,
+      focusNode: _assetValueFocus,
+      onEditingComplete: () => _assetValueEditingComplete(),
+      controller: _assetValueController,
+      onChanged: (val) {
+        _updatePremium(val);
+      },
+      inputFormatters: [ThousandsSeparatorInputFormatter()],
+      labelText: "Sum insured (GH¢)",
+      validator: (val) => val!.length < 3 ? "Name is too short" : null,
+      keyboardType: TextInputType.number,
     );
   }
 
   Widget _premium(ThemeData theme) {
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: TextFormField(
-        enabled: isLoading == false,
-        // focusNode: _assetCostFocus,
-        readOnly: true,
-        // onEditingComplete: () => _assetCostEditingComplete(),
-        controller: _premiumValueController,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 8.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            // label: const Text("Name of owner"),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            labelText: "Premium",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textInputAction: TextInputAction.next,
-      ),
+    return InputField(
+      isLoading: isLoading,
+      padding: Insets.verticalPadding16,
+      readOnly: true,
+      controller: _premiumValueController,
+      labelText: "Premium",
     );
   }
 }

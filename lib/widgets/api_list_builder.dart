@@ -23,6 +23,7 @@ class APIListBuilder<T> extends StatelessWidget {
     ),
     this.scrollDirection = Axis.vertical,
     this.padding,
+    this.physics,
   }) : super(key: key);
   final AsyncSnapshot<List<T>?> snapshot;
   final ItemWidgetBuilder<T> itemBuilder;
@@ -37,6 +38,7 @@ class APIListBuilder<T> extends StatelessWidget {
   final Widget separatorWidget;
   final Axis scrollDirection;
   final EdgeInsetsGeometry? padding;
+  final ScrollPhysics? physics;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +75,7 @@ class APIListBuilder<T> extends StatelessWidget {
   Widget _buildList(List<T> items) {
     return ListView.separated(
       key: PageStorageKey<String>(items.toString()),
+      physics: physics,
       padding: padding ?? Insets.standardPadding,
       scrollDirection: scrollDirection,
       shrinkWrap: true,

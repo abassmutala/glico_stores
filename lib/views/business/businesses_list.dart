@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:glico_stores/constants/app_colors.dart';
 import 'package:glico_stores/constants/route_names.dart';
 import 'package:glico_stores/constants/ui_constants.dart';
 import 'package:glico_stores/locator.dart';
@@ -42,116 +44,189 @@ class _BusinessesListState extends State<BusinessesList> {
     return StreamBuilder<List<Business>?>(
         stream: db.getBusinessesStream(),
         builder: (context, snapshot) {
-          return Scaffold(
-            appBar: AppBar(
-              toolbarHeight: kToolbarHeight * 2,
-              // centerTitle: false,
-              title: SizedBox(
-                height: kToolbarHeight * 0.75,
-                child: Image.asset(
-                  "images/glicogeneral_logo.png",
-                ),
+          return Stack(
+            children: [
+              Image.asset(
+                "images/rectangle.png",
+                fit: BoxFit.cover,
               ),
-              actions: [
-                InkWell(
-                  onTap: () => navService.navigateTo(profileViewRoute),
-                  child: FutureBuilder<User>(
-                      future: currentUser != null
-                          ? db.getUser(currentUser.uid)
-                          : null,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data != null) {
-                          final user = snapshot.data;
-                          final String initials = Utilities.getNameInitials(
-                              firstname: user!.firstName!);
-                          return CircleAvatar(
-                            maxRadius: 28,
-                            backgroundColor: Color(
-                              int.parse(
-                                user.color!.replaceRange(0, 3, "0x73"),
-                              ),
-                            ),
-                            child: Text(
-                              initials,
-                              style: theme.textTheme.titleLarge,
-                            ),
-                          );
-                        }
-                        return const CircleAvatar(
-                          maxRadius: 28,
-                          child: CircularProgressIndicator.adaptive(),
-                        );
-                      }),
-                ),
-                Spacing.horizontalSpace16
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(kTextTabBarHeight / 2),
-                child: Text(
-                    "Displaying ${snapshot.data?.length} registered businesses"),
+              const ModalBarrier(
+                color: modalBg,
               ),
-            ),
-            body: APIListBuilder(
-              snapshot: snapshot,
-              itemBuilder: (context, business) {
-                final initials = Utilities.getInitials(business.name!);
-                return Hero(
-                  tag: business.uid,
-                  child: Card(
-                    child: ClipRRect(
-                      child: ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        // isThreeLine: true,
-                        leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.primary,
-                          child: Center(
-                            child: Text(
-                              initials,
-                              style: TextStyle(
-                                color: theme.colorScheme.secondary,
-                              ),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: NestedScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  headerSliverBuilder:
+                      (BuildContext context, bool innerBoxIsScrolled) {
+                    return <Widget>[
+                      SliverAppBar(
+                        automaticallyImplyLeading: false,
+                        expandedHeight: kToolbarHeight * 4,
+                        pinned: false,
+                        stretch: true,
+                        elevation: 0.0,
+                        stretchTriggerOffset: 100,
+                        actions: [
+                          IconButton(
+                            onPressed: () =>
+                                navService.navigateTo(profileViewRoute),
+                            icon: Icon(
+                              LucideIcons.userCircle2,
+                              size: 32,
+                              color: theme.colorScheme.background,
+                            ),
+                          ),
+                          // Spacing.horizontalSpace16
+                        ],
+                        flexibleSpace: ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: ScreenSize.width >= 600
+                                ? const Radius.circular(60)
+                                : const Radius.circular(25),
+                          ),
+                          child: FlexibleSpaceBar(
+                            background: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.asset(
+                                  "images/rectangle.png",
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.topCenter,
+                                ),
+                                Container(
+                                  color: modalBg,
+                                ),
+                                Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 320,
+                                      child: SvgPicture.asset(
+                                          "images/glico_general_logo.svg"),
+                                    ),
+                                    Text(
+                                      "${snapshot.data?.length} registered businesses",
+                                      style: TextStyle(
+                                          color: theme.colorScheme.background),
+                                    ),
+                                  ],
+                                )
+                              ],
                             ),
                           ),
                         ),
-                        title: Text(
-                          business.name!,
-                          style: theme.textTheme.titleLarge!.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      ),
+                    ];
+                  },
+                  body: Container(
+                    color: Colors.transparent,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenSize.width >= 600 ? 48 : 0,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          topRight: ScreenSize.width >= 600
+                              ? const Radius.circular(60)
+                              : const Radius.circular(25),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                        color: Colors.white,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
                           children: [
-                            Text(business.category!),
-                            Text(business.address!),
+                            Spacing.verticalSpace8,
+                            ElevatedButton(
+                              onPressed: () =>
+                                  navService.navigateTo(addBusinessRoute),
+                              child: const Text(
+                                "Add business",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            Spacing.verticalSpace12,
+                            APIListBuilder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              snapshot: snapshot,
+                              separatorWidget: const SizedBox(
+                                height: 12.0,
+                              ),
+                              itemBuilder: (context, business) {
+                                final initials =
+                                    Utilities.getInitials(business.name!);
+                                return Hero(
+                                  tag: business.uid,
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: ListTile(
+                                      dense: true,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(60.0),
+                                      ),
+                                      tileColor:
+                                          const Color.fromRGBO(241, 241, 241, 1),
+                                      // isThreeLine: true,
+                                      leading: CircleAvatar(
+                                        radius: 24,
+                                        backgroundColor:
+                                            theme.colorScheme.primary,
+                                        child: Center(
+                                          child: Text(
+                                            initials,
+                                            style: TextStyle(
+                                              color: theme.colorScheme.secondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      title: Text(
+                                        business.name!,
+                                        style:
+                                            theme.textTheme.titleLarge!.copyWith(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Text(
+                                            Utilities
+                                                .convertbusinessCategoryToText(
+                                                    business.category!),
+                                          ),
+                                          Text(business.address!),
+                                        ],
+                                      ),
+                                      onTap: () => navService.navigateTo(
+                                          businessDetailsRoute,
+                                          arguments: business.uid),
+                                    ),
+                                  ),
+                                );
+                              },
+                              nullIcon: LucideIcons.info,
+                              nullLabel: "Zzz",
+                              nullSubLabel: "No businesses registered",
+                              errorSubtitle: "An error occured.",
+                            ),
+                            Spacing.verticalSpace24,
                           ],
                         ),
-                        onTap: () => navService.navigateTo(businessDetailsRoute,
-                            arguments: business.uid),
                       ),
                     ),
                   ),
-                );
-              },
-              nullIcon: LucideIcons.info,
-              nullLabel: "Zzz",
-              nullSubLabel: "No businesses registered",
-              errorSubtitle: "An error occured.",
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              backgroundColor: Colors.white,
-              foregroundColor: theme.colorScheme.primary,
-              onPressed: () => navService.navigateTo(addBusinessRoute),
-              tooltip: "Add business",
-              icon: const Icon(LucideIcons.plus),
-              label: const Text("Add business"),
-              // label: const Text("Add staff"),
-            ),
+                ),
+              ),
+            ],
           );
         });
   }

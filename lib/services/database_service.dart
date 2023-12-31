@@ -115,6 +115,32 @@ class DatabaseService {
     }
   }
 
+  Future deleteUser(String uid) async {
+    await _deleteDoc(documentPath: "${APIPath.users()}/$uid}");
+  }
+
+  Future<bool> checkIfCredentialsMatch(
+      User? user, String uniqueCode, String deviceID) async {
+    //  final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userId = user.uid;
+      final User userData = await getUser(userId);
+
+      final storedUniqueId = userData.uniqueCode;
+      final storedDeviceID = userData.deviceInfo!["id"];
+
+      if (uniqueCode == storedUniqueId && deviceID == storedDeviceID) {
+        // Update the session timestamp to extend it by 72 hours
+        final currentTime = DateTime.now().millisecondsSinceEpoch;
+        await _updateData(documentPath: "users/${user.uid}", data: {'lastLoginTimestamp': currentTime});
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   Future updateRegisteredBusinessesForUser(
       String uid, String businessId) async {
     try {
@@ -201,8 +227,19 @@ class DatabaseService {
     );
   }
 
-  Stream<List<Business>?> getBusinessesStream() => _collectionStream(
-      path: APIPath.businesses(), builder: (data) => Business.fromMap(data));
+  Stream<List<Business>?> getBusinessesStream() {
+    final reference = _service.collection(APIPath.businesses()).orderBy('regDate', descending: true);
+    final snapshots = reference.snapshots();
+    return snapshots.map(
+      (snapshot) => snapshot.docs
+          .map(
+            (document) => Business.fromMap(document.data()),
+          )
+          .toList(),
+    );
+    // return _collectionStream(
+    //   path: , builder: (data) => Business.fromMap(data));
+  }
 
   Stream<List<Map<String, dynamic>>> getCategoriesStream() {
     final data = _collectionStream(

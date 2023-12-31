@@ -24,6 +24,7 @@ class Business {
   final bool? insured;
   // final String? landmark;
   // final bool? verified;
+  final int? color;
 
   Business({
     required this.uid,
@@ -49,6 +50,7 @@ class Business {
     this.estimatedAssetValue,
     this.premium,
     this.insured,
+    this.color,
   });
 
   factory Business.fromMap(Map<String, dynamic> mapData) {
@@ -75,6 +77,7 @@ class Business {
     final double? estimatedAssetValue = mapData["estimatedAssetValue"];
     final double? premium = mapData["premium"];
     final bool? insured = mapData['insured'];
+    final int? color = mapData['color'];
 
     return Business(
       uid: uid,
@@ -99,6 +102,7 @@ class Business {
       estimatedAssetValue: estimatedAssetValue,
       premium: premium,
       insured: insured,
+      color: color
     );
   }
 
@@ -126,7 +130,8 @@ class Business {
       "insuranceType": insuranceType,
       "estimatedAssetValue": estimatedAssetValue,
       "premium": premium,
-      "insured": insured
+      "insured": insured,
+      "color": color,
     };
   }
 }
