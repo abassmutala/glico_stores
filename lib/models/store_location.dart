@@ -1,4 +1,4 @@
-class BusinessLocation {
+class StoreLocation {
   double? latitude;
   double? longitude;
   final double? altitude;
@@ -21,7 +21,7 @@ class BusinessLocation {
   final String? region;
   final String? country;
 
-  BusinessLocation({
+  StoreLocation({
     this.latitude,
     this.longitude,
     this.altitude,
@@ -36,7 +36,7 @@ class BusinessLocation {
     this.country,
   });
 
-  factory BusinessLocation.fromMap(Map<String, dynamic> mapData) {
+  factory StoreLocation.fromMap(Map<String, dynamic> mapData) {
     double? latitude = mapData['latitude'];
     double? longitude = mapData['longitude'];
     final double? altitude = mapData['altitude'];
@@ -49,7 +49,7 @@ class BusinessLocation {
     final String? city = mapData['city'];
     final String? region = mapData['region'];
     final String? country = mapData['country'];
-    return BusinessLocation(
+    return StoreLocation(
       latitude: latitude,
       longitude: longitude,
       altitude: altitude,

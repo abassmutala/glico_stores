@@ -3,69 +3,59 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:glico_stores/constants/api_path.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/regex_patterns.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/locator.dart';
-
-import 'package:glico_stores/models/business.dart';
-import 'package:glico_stores/models/business_location.dart';
-import 'package:glico_stores/models/user.dart';
-import 'package:glico_stores/services/auth_service.dart';
-import 'package:glico_stores/services/database_service.dart';
-import 'package:glico_stores/services/image_picker_service.dart';
-import 'package:glico_stores/services/location_service.dart';
-import 'package:glico_stores/services/navigation_service.dart';
-import 'package:glico_stores/services/storage_service.dart';
-import 'package:glico_stores/utils/enums.dart';
-import 'package:glico_stores/utils/utilities.dart';
-import 'package:glico_stores/views/map_view.dart';
-import 'package:glico_stores/widgets/input_field.dart';
+import '/constants/api_path.dart';
+import '/constants/app_colors.dart';
+import '/constants/regex_patterns.dart';
+import '/constants/route_names.dart';
+import '/constants/ui_constants.dart';
+import '/locator.dart';
+import '/models/store.dart';
+import '/models/store_location.dart';
+import '/services/database_service.dart';
+import '/services/image_picker_service.dart';
+import '/services/location_service.dart';
+import '/services/navigation_service.dart';
+import '/services/storage_service.dart';
+import '/utils/utilities.dart';
+import '/views/map_view.dart';
+import '/widgets/input_field.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:provider/provider.dart';
 
-class AddBusiness extends StatefulWidget {
-  const AddBusiness({super.key});
+class AddStore extends StatefulWidget {
+  const AddStore({super.key});
 
   @override
-  State<AddBusiness> createState() => _AddBusinessState();
+  State<AddStore> createState() => _AddStoreState();
 }
 
-class _AddBusinessState extends State<AddBusiness> {
-  final GlobalKey<FormState> _addBusinessFormKey = GlobalKey<FormState>();
+class _AddStoreState extends State<AddStore> {
+  final GlobalKey<FormState> _addStoreFormKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ownerController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _assetCostController = TextEditingController();
-  final TextEditingController _premiumController = TextEditingController();
   final List<TextEditingController> _phoneInputControllers = [];
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _ownerFocus = FocusNode();
   final FocusNode _addressFocus = FocusNode();
   final FocusNode _commentFocus = FocusNode();
   final FocusNode _categoryFocus = FocusNode();
-  final FocusNode _assetCostFocus = FocusNode();
   final List<FocusNode> _phoneFocuses = [];
 
   _nameEditingComplete() => FocusScope.of(context).nextFocus();
   _ownerEditingComplete() => FocusScope.of(context).nextFocus();
   _addressEditingComplete() => FocusScope.of(context).nextFocus();
   _commentEditingComplete() => FocusScope.of(context).nextFocus();
-  _assetCostEditingComplete() => FocusScope.of(context).nextFocus();
 
   late bool isLoading;
-  late BusinessLocation? currentLocation;
-  late BusinessLocation? currentAddress;
+  late StoreLocation? currentLocation;
+  late StoreLocation? currentAddress;
   late GeoPoint? coordinates;
   late List<File>? selectedImages;
   String dropdownValue = '';
-  InsuranceType insuranceTypeValue = InsuranceType.unselected;
 
   void _addPhoneNumber() {
     setState(() {
@@ -157,7 +147,7 @@ class _AddBusinessState extends State<AddBusiness> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            "Could not get location of business",
+            "Could not get location of store",
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -174,7 +164,7 @@ class _AddBusinessState extends State<AddBusiness> {
       // final compressedImage = await storageService.compressImage(photo);
       // print("Photo: $compressedImage");
       final downloadUrl =
-          await storageService.uploadPhoto(photo, APIPath.businessPhotos(uid));
+          await storageService.uploadPhoto(photo, APIPath.storePhotos(uid));
       downloadUrls.add(downloadUrl);
     }
     return downloadUrls;
@@ -182,23 +172,16 @@ class _AddBusinessState extends State<AddBusiness> {
 
   Future<void> updatePhotoReferences(List<String> links, String uid) async {
     for (String link in links) {
-      await db.updateBusinessData(uid, {
+      await db.updateStoreData(uid, {
         "photos": FieldValue.arrayUnion([link])
       });
     }
   }
 
-  Future<void> addBusiness() async {
-    final User? currentUser =
-        Provider.of<AuthBase>(context, listen: false).currentUser;
-
+  Future<void> addStore() async {
     List<String> phoneNumbersList =
         _phoneInputControllers.map((e) => e.text).toList();
-    final estimatedAssetValue =
-        double.tryParse(_assetCostController.text.replaceAll(",", ""));
-    final premium =
-        double.tryParse(_premiumController.text.replaceAll(",", ""));
-    Business newBusiness = Business(
+    Store newStore = Store(
       uid: "uid",
       name: _nameController.text.trim(),
       owner: _ownerController.text.trim(),
@@ -207,28 +190,23 @@ class _AddBusinessState extends State<AddBusiness> {
       comment: _commentController.text.trim(),
       category: dropdownValue,
       phone: phoneNumbersList,
-      insuranceType: insuranceTypeValue.name,
-      estimatedAssetValue: estimatedAssetValue,
-      premium: premium,
-      insured: false,
       photos: [],
       regDate: Timestamp.fromDate(
         DateTime.now(),
       ),
-      uniqueCode: Utilities.generateBusinessCode(_addressController.text),
+      uniqueCode: Utilities.generateStoreCode(_addressController.text),
     );
     try {
       setState(() {
         isLoading = true;
       });
-      final uid = await db.createBusinessProfile(newBusiness);
-      await db.updateBusinessUid(uid);
+      final uid = await db.createStoreProfile(newStore);
+      await db.updateStoreUid(uid);
       selectedImages != null
           ? await uploadPhotos(selectedImages!, uid).then(
               (value) => updatePhotoReferences(value, uid),
             )
           : null;
-      await db.updateRegisteredBusinessesForUser(currentUser!.uid, uid);
       setState(() {
         isLoading = false;
       });
@@ -236,11 +214,11 @@ class _AddBusinessState extends State<AddBusiness> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
-          content: Text("Business added successfully"),
+          content: Text("Store added successfully"),
         ),
       );
 
-      navService.navigateToReplacement(businessesListRoute);
+      navService.navigateToReplacement(storesListRoute);
     } on PlatformException catch (e) {
       setState(() {
         isLoading = false;
@@ -257,55 +235,10 @@ class _AddBusinessState extends State<AddBusiness> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    // return Stack(
-    //   children: [
-    //     Stack(
-    //       fit: StackFit.expand,
-    //       children: [
-    //         Image.asset(
-    //           "images/rectangle.png",
-    //           fit: BoxFit.cover,
-    //           alignment: Alignment.topCenter,
-    //         ),
-    //         Container(
-    //           color: Colors.black54,
-    //         ),
-    //         Column(
-    //           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    //           crossAxisAlignment: CrossAxisAlignment.center,
-    //           children: [
-    //             SizedBox(
-    //               width: 320,
-    //               child: SvgPicture.asset("images/glico_general_logo.svg"),
-    //             ),
-    //           ],
-    //         )
-    //       ],
-    //     ),
-    //     DraggableScrollableSheet(
-    //         maxChildSize: 0.85,
-    //         minChildSize: 0.2,
-    //         builder: (context, scrollController) {
-    //           return Container(
-    //             padding: const EdgeInsets.symmetric(horizontal: 20),
-    //             decoration: const BoxDecoration(
-    //                 color: Colors.white,
-    //                 borderRadius:
-    //                     BorderRadius.vertical(top: Radius.circular(30))),
-    //             child: SingleChildScrollView(
-    //               controller: scrollController,
-    //               child: const Column(
-    //                 children: [],
-    //               ),
-    //             ),
-    //           );
-    //         })
-    //   ],
-    // );
     return Stack(
       children: [
         Image.asset(
-          "images/rectangle.png",
+          "images/ericsson-mobility-report-novembe.png",
           fit: BoxFit.cover,
         ),
         const ModalBarrier(
@@ -323,7 +256,7 @@ class _AddBusinessState extends State<AddBusiness> {
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      "images/rectangle.png",
+                      "images/ericsson-mobility-report-novembe.png",
                       fit: BoxFit.cover,
                       alignment: Alignment.topCenter,
                     ),
@@ -335,13 +268,13 @@ class _AddBusinessState extends State<AddBusiness> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(
-                        width: 320,
-                        child:
-                            SvgPicture.asset("images/glico_general_logo.svg"),
-                      ),
+                      // SizedBox(
+                      //   width: 320,
+                      //   child:
+                      //       SvgPicture.asset("images/glico_general_logo.svg"),
+                      // ),
                       Text(
-                        "Add business",
+                        "Add store",
                         style: theme.textTheme.headlineSmall!.copyWith(
                           color: Colors.white,
                         ),
@@ -370,7 +303,7 @@ class _AddBusinessState extends State<AddBusiness> {
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 children: [
                   Form(
-                    key: _addBusinessFormKey,
+                    key: _addStoreFormKey,
                     child: Column(
                       children: [
                         _nameInputField(theme),
@@ -379,9 +312,6 @@ class _AddBusinessState extends State<AddBusiness> {
                         _mapView(coordinates),
                         _categoryInputField(theme),
                         _phoneNumberWidgets(theme),
-                        _insuraneTypePicker(theme),
-                        _estimatedAssetCostInputField(theme),
-                        _premium(theme),
                         _commentInputField(theme),
                         _photosInputField(theme)
                       ],
@@ -398,32 +328,15 @@ class _AddBusinessState extends State<AddBusiness> {
     );
   }
 
-  String _formatWithCommas(String value) {
-    final format = NumberFormat("#,###.##");
-    return format.format(double.parse(value));
-  }
-
-  void _updatePremium(String value) {
-    if (value.isEmpty) {
-      _premiumController.text = '';
-    } else {
-      double inputValue = double.tryParse(value.replaceAll(',', '')) ?? 0;
-      double result = inputValue * 0.025;
-      final formattedResult = _formatWithCommas(result.toStringAsFixed(2));
-      _premiumController.text = formattedResult;
-      // result.toStringAsFixed(2); // Format result to 2 decimal places
-    }
-  }
-
   Widget _nameInputField(ThemeData theme) {
     return InputField(
       isLoading: isLoading,
-      hintText: "Business name",
+      hintText: "Store name",
       autofocus: true,
       focusNode: _nameFocus,
       onEditingComplete: () => _nameEditingComplete(),
       controller: _nameController,
-      validator: (val) => val!.length < 2 ? "Business name is too short" : null,
+      validator: (val) => val!.length < 2 ? "Store name is too short" : null,
     );
   }
 
@@ -453,49 +366,6 @@ class _AddBusinessState extends State<AddBusiness> {
     );
   }
 
-  Widget _estimatedAssetCostInputField(ThemeData theme) {
-    return InputField(
-      isLoading: isLoading,
-      hintText: "Estimated cost of assets (GH¢)",
-      focusNode: _assetCostFocus,
-      onEditingComplete: () => _assetCostEditingComplete(),
-      controller: _assetCostController,
-      onChanged: (val) {
-        _updatePremium(val);
-      },
-      // onChanged: (val) {
-      //   _premiumController.text =
-      //     (double.parse(_assetCostController.text) * 0.025).toString();
-      // },
-      inputFormatters: [
-        // FilteringTextInputFormatter.digitsOnly,
-        ThousandsSeparatorInputFormatter(),
-      ],
-      // onChanged: (val) {
-      //   if (val.isNotEmpty) {
-      //     // _premiumController.text = "${(double.parse(val) * 0.025)}";
-      //     String formattedValue =
-      //         Utilities.formatNumber(_assetCostController.text);
-      //     _assetCostController.value = _assetCostController.value.copyWith(
-      //         text: formattedValue,
-      //         selection:
-      //             TextSelection.collapsed(offset: formattedValue.length));
-      //   }
-      // },
-      validator: (val) => val!.length < 3 ? "Name is too short" : null,
-      keyboardType: TextInputType.number,
-    );
-  }
-
-  Widget _premium(ThemeData theme) {
-    return InputField(
-      isLoading: isLoading,
-      hintText: "Premium",
-      readOnly: true,
-      controller: _premiumController,
-    );
-  }
-
   Widget _commentInputField(ThemeData theme) {
     return InputField(
       isLoading: isLoading,
@@ -514,7 +384,7 @@ class _AddBusinessState extends State<AddBusiness> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Add photos of business",
+          "Add photos of store",
           style: theme.textTheme.titleMedium!.copyWith(color: Colors.black54),
           textAlign: TextAlign.center,
         ),
@@ -526,7 +396,7 @@ class _AddBusinessState extends State<AddBusiness> {
               width: 95.5,
               height: 95.5,
               child: FloatingActionButton.large(
-                heroTag: "business photos",
+                heroTag: "store photos",
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24.0),
                 ),
@@ -702,60 +572,6 @@ class _AddBusinessState extends State<AddBusiness> {
     );
   }
 
-  Widget _insuraneTypePicker(ThemeData theme) {
-    final List<Map<InsuranceType, String>> insuranceTypes = [
-      {InsuranceType.unselected: "Insurance type"},
-      {InsuranceType.business: "Business"},
-      {InsuranceType.products: "Products"},
-    ];
-
-    List<DropdownMenuItem<InsuranceType>> buildDropdownMenuItems() {
-      return insuranceTypes.map((insuranceTypeMap) {
-        InsuranceType insuranceType = insuranceTypeMap.keys.first;
-        String value = insuranceTypeMap.values.first;
-
-        return DropdownMenuItem<InsuranceType>(
-          value: insuranceType,
-          enabled: value != "Insurance type",
-          child: Text(
-            value,
-            style: TextStyle(
-                color:
-                    value == "Insurance type" ? theme.hintColor : Colors.black),
-          ),
-        );
-      }).toList();
-    }
-
-    return Padding(
-      padding: Insets.verticalPadding8,
-      child: DropdownButtonFormField<InsuranceType>(
-        items: buildDropdownMenuItems(),
-        value: insuranceTypeValue,
-        onChanged: (InsuranceType? newValue) {
-          setState(() {
-            insuranceTypeValue = newValue!;
-          });
-        },
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 16.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(60.0),
-              borderSide: BorderSide.none,
-            ),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            hintText: "Insurance type",
-            hintStyle: const TextStyle(color: Colors.grey),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge, // validator: (val) =>
-      ),
-    );
-  }
-
   Widget _mapView(GeoPoint? center) {
     if (center == null) {
       return Container();
@@ -839,10 +655,9 @@ class _AddBusinessState extends State<AddBusiness> {
           width: 192,
           child: ElevatedButton(
             onPressed: () async => !isLoading &&
-                    _addBusinessFormKey.currentState!.validate() &&
-                    dropdownValue != "" &&
-                    insuranceTypeValue != InsuranceType.unselected
-                ? await addBusiness()
+                    _addStoreFormKey.currentState!.validate() &&
+                    dropdownValue != ""
+                ? await addStore()
                 : null,
             child: isLoading
                 ? Center(

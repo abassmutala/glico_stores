@@ -3,27 +3,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/regex_patterns.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/locator.dart';
-import 'package:glico_stores/models/user.dart';
-import 'package:glico_stores/services/auth_service.dart';
-import 'package:glico_stores/services/database_service.dart';
-import 'package:glico_stores/widgets/input_field.dart';
+import 'package:trilo/locator.dart';
 
+import '../../constants/route_names.dart';
+import '../../constants/ui_constants.dart';
+import '../../models/user.dart';
+import '../../services/auth_service.dart';
+import '../../services/database_service.dart';
 import '../../services/navigation_service.dart';
+import '../../widgets/input_field.dart';
 
 class SignIn extends StatefulWidget {
-  const SignIn({Key? key}) : super(key: key);
+  const SignIn({super.key});
 
   @override
   _SignInState createState() => _SignInState();
 }
 
 class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
-  final GlobalKey<FormState> _signInFormKey = GlobalKey<FormState>();
   final GlobalKey<FormState> _uniqueCodeFormKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -260,27 +257,27 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
     }
   }
 
-  Future validateCodes(User user) async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
-      final valid = await DatabaseService().checkIfCredentialsMatch(
-          user, _uniqueCodeController.text, _deviceData["id"]);
-      setState(() {
-        isLoading = false;
-      });
-      if (valid) {
-        _navigationService.navigateToReplacement(businessesListRoute);
-      }
-      // await showErrorDialog();
-    } on PlatformException {
-      setState(() {
-        isLoading = false;
-      });
-      await showErrorDialog();
-    }
-  }
+  // Future validateCodes(User user) async {
+  //   try {
+  //     setState(() {
+  //       isLoading = true;
+  //     });
+  //     final valid = await DatabaseService().checkIfCredentialsMatch(
+  //         user, _uniqueCodeController.text, _deviceData["id"]);
+  //     setState(() {
+  //       isLoading = false;
+  //     });
+  //     if (valid) {
+  //       _navigationService.navigateToReplacement(storesListRoute);
+  //     }
+  //     // await showErrorDialog();
+  //   } on PlatformException {
+  //     setState(() {
+  //       isLoading = false;
+  //     });
+  //     await showErrorDialog();
+  //   }
+  // }
 
   Future<dynamic> showErrorDialog() {
     return showDialog(
@@ -319,11 +316,12 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
                           style: theme.textTheme.titleMedium!
                               .copyWith(color: Colors.white),
                         ),
-                        onPressed: () async =>
-                            _uniqueCodeFormKey.currentState!.validate() &&
-                                    !isLoading
-                                ? await validateCodes(user)
-                                : null,
+                        // onPressed: () async =>
+                        //     _uniqueCodeFormKey.currentState!.validate() &&
+                        //             !isLoading
+                        //         ? await validateCodes(user)
+                        //         : null,
+                        onPressed: () {},
                       ),
                     ),
                   ],
@@ -341,7 +339,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
     return Stack(
       children: [
         Image.asset(
-          "images/rectangle.png",
+          "images/ericsson-mobility-report-novembe.png",
           fit: BoxFit.cover,
         ),
         const ModalBarrier(
@@ -359,7 +357,7 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      "images/rectangle.png",
+                      "images/ericsson-mobility-report-novembe.png",
                       fit: BoxFit.cover,
                       alignment: Alignment.topCenter,
                     ),
@@ -371,11 +369,11 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(
-                        width: 320,
-                        child:
-                            SvgPicture.asset("images/glico_general_logo.svg"),
-                      ),
+                      // SizedBox(
+                      //   width: 320,
+                      //   child:
+                      //       SvgPicture.asset("images/glico_general_logo.svg"),
+                      // ),
                       Text(
                         "Sign In",
                         style: theme.textTheme.headlineMedium!.copyWith(
@@ -404,19 +402,19 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 children: <Widget>[
-                  _signInForm(theme),
-                  Spacing.verticalSpace8,
-                  TextButton(
-                    onPressed: () {
-                      _navigationService.navigateTo(forgotPasswordRoute);
-                    },
-                    child: const Text(
-                      "Forgot password?",
-                      style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: subtitleColor),
-                    ),
-                  ),
+                  // _signInForm(theme),
+                  // Spacing.verticalSpace8,
+                  // TextButton(
+                  //   onPressed: () {
+                  //     _navigationService.navigateTo(forgotPasswordRoute);
+                  //   },
+                  //   child: const Text(
+                  //     "Forgot password?",
+                  //     style: TextStyle(
+                  //         decoration: TextDecoration.underline,
+                  //         color: subtitleColor),
+                  //   ),
+                  // ),
                   Spacing.verticalSpace24,
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -430,11 +428,12 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
                             style: theme.textTheme.titleMedium!
                                 .copyWith(color: Colors.white),
                           ),
-                          onPressed: () async =>
-                              _signInFormKey.currentState!.validate() &&
-                                      !isLoading
-                                  ? await signIn(theme)
-                                  : null,
+                          // onPressed: () async =>
+                          //     _signInFormKey.currentState!.validate() &&
+                          //             !isLoading
+                          //         ? await signIn(theme)
+                          //         : null,
+                          onPressed: () {},
                         ),
                       ),
                     ],
@@ -456,52 +455,6 @@ class _SignInState extends State<SignIn> with SingleTickerProviderStateMixin {
           ),
         ),
       ],
-    );
-  }
-
-  Form _signInForm(
-    ThemeData theme,
-  ) {
-    return Form(
-      key: _signInFormKey,
-      child: Column(
-        children: <Widget>[
-          _emailInputField(theme),
-          _passwordInputField(theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _emailInputField(
-    ThemeData theme,
-  ) {
-    return InputField(
-      isLoading: isLoading,
-      autofocus: true,
-      focusNode: _emailFocus,
-      onEditingComplete: () => _emailEditingComplete(),
-      controller: _emailController,
-      hintText: "Email address",
-      validator: (val) =>
-          !emailPattern.hasMatch(val!) ? "Invalid email address" : null,
-      keyboardType: TextInputType.emailAddress,
-    );
-  }
-
-  Widget _passwordInputField(
-    ThemeData theme,
-  ) {
-    return InputField(
-      isLoading: isLoading,
-      focusNode: _passwordFocus,
-      onEditingComplete: () => _passwordEditingComplete(),
-      controller: _passwordController,
-      hintText: "Password",
-      validator: (val) => val!.length < 8 ? "Password is too short" : null,
-      keyboardType: TextInputType.text,
-      obscureText: true,
-      textInputAction: TextInputAction.done,
     );
   }
 }

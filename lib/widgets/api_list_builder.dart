@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/widgets/empty_state_layout.dart';
+import '/constants/ui_constants.dart';
+import '/widgets/empty_state_layout.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 typedef ItemWidgetBuilder<T> = Widget Function(BuildContext context, T item);
 
 class APIListBuilder<T> extends StatelessWidget {
   const APIListBuilder({
-    Key? key,
+    super.key,
     required this.snapshot,
     required this.itemBuilder,
     this.nullIcon,
@@ -24,7 +24,7 @@ class APIListBuilder<T> extends StatelessWidget {
     this.scrollDirection = Axis.vertical,
     this.padding,
     this.physics,
-  }) : super(key: key);
+  });
   final AsyncSnapshot<List<T>?> snapshot;
   final ItemWidgetBuilder<T> itemBuilder;
   final IconData? nullIcon;

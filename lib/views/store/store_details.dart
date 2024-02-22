@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/locator.dart';
-
-import 'package:glico_stores/models/business.dart';
-import 'package:glico_stores/services/database_service.dart';
-import 'package:glico_stores/services/navigation_service.dart';
+import '/constants/app_colors.dart';
+import '/constants/route_names.dart';
+import '/constants/ui_constants.dart';
+import '/locator.dart';
+import '/models/store.dart';
+import '/services/database_service.dart';
+import '/services/navigation_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:glico_stores/utils/utilities.dart';
-import 'package:glico_stores/widgets/detail_tile.dart';
-import 'package:glico_stores/widgets/details_skeleton.dart';
+import '/utils/utilities.dart';
+import '/widgets/detail_tile.dart';
+import '/widgets/details_skeleton.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-class BusinessDetails extends StatefulWidget {
-  const BusinessDetails(
+class StoreDetails extends StatefulWidget {
+  const StoreDetails(
     this.uid, {
     super.key,
   });
@@ -22,17 +21,17 @@ class BusinessDetails extends StatefulWidget {
   final String uid;
 
   @override
-  State<BusinessDetails> createState() => _BusinessDetailsState();
+  State<StoreDetails> createState() => _StoreDetailsState();
 }
 
-class _BusinessDetailsState extends State<BusinessDetails> {
+class _StoreDetailsState extends State<StoreDetails> {
   final DatabaseService db = locator<DatabaseService>();
   final NavigationService navService = locator<NavigationService>();
   final PageController controller = PageController();
 
-  Future<void> deleteBusiness(String uid, String name) async {
+  Future<void> deleteStore(String uid, String name) async {
     try {
-      await db.deleteBusiness(uid).then(
+      await db.deleteStore(uid).then(
             (value) => ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: Colors.green,
@@ -41,7 +40,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
             ),
           );
       navService.pop();
-      navService.navigateToReplacement(businessesListRoute);
+      navService.navigateToReplacement(storesListRoute);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -55,16 +54,16 @@ class _BusinessDetailsState extends State<BusinessDetails> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return FutureBuilder<Business>(
-        future: db.getBusiness(widget.uid),
+    return FutureBuilder<Store>(
+        future: db.getStore(widget.uid),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            final Business business = snapshot.data!;
+            final Store store = snapshot.data!;
             return Hero(
               tag: widget.uid,
               child: Stack(
                 children: [
-                  business.photos!.isEmpty
+                  store.photos!.isEmpty
                       ? Container(
                           color: theme.colorScheme.secondary,
                         )
@@ -76,10 +75,10 @@ class _BusinessDetailsState extends State<BusinessDetails> {
                       headerSliverBuilder:
                           (BuildContext context, bool innerBoxIsScrolled) {
                         return <Widget>[
-                          sliverAppBar(theme, business, context),
+                          sliverAppBar(theme, store, context),
                         ];
                       },
-                      body: body(business, theme),
+                      body: body(store, theme),
                     ),
                   ),
                 ],
@@ -90,7 +89,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
         });
   }
 
-  Widget body(Business business, ThemeData theme) {
+  Widget body(Store store, ThemeData theme) {
     return Container(
       color: Colors.transparent,
       child: Container(
@@ -110,30 +109,20 @@ class _BusinessDetailsState extends State<BusinessDetails> {
             Spacing.verticalSpace16,
             DetailTile(
               icon: LucideIcons.user2,
-              title: "${business.owner}",
+              title: "${store.owner}",
             ),
             divider(theme),
             DetailTile(
               icon: LucideIcons.mapPin,
-              title: business.address!,
-            ),
-            divider(theme),
-            phoneNumbersWidget(business.phone, theme),
-            DetailTile(
-              icon: LucideIcons.package,
-              title: "To insure ${business.insuranceType!}",
+              title: store.address!,
             ),
             divider(theme),
             DetailTile(
-              icon: LucideIcons.wallet,
-              title:
-                  "Assets estimated at a value of GH¢${business.estimatedAssetValue!}",
+              icon: LucideIcons.messageSquare,
+              title: store.comment!,
             ),
             divider(theme),
-            DetailTile(
-              icon: LucideIcons.coins,
-              title: "To pay a premium of GH¢${business.premium!}",
-            ),
+            phoneNumbersWidget(store.phone, theme),
           ],
         ),
       ),
@@ -141,7 +130,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
   }
 
   SliverAppBar sliverAppBar(
-      ThemeData theme, Business business, BuildContext context) {
+      ThemeData theme, Store store, BuildContext context) {
     return SliverAppBar(
       leading: IconButton(
         onPressed: () => navService.pop(),
@@ -155,8 +144,8 @@ class _BusinessDetailsState extends State<BusinessDetails> {
         IconButton(
           onPressed: () {
             navService.navigateTo(
-              editBusinessDetailsRoute,
-              arguments: business.uid,
+              editStoreDetailsRoute,
+              arguments: store.uid,
             );
           },
           icon: const Icon(
@@ -169,7 +158,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
           onPressed: () => showDialog(
               context: context,
               builder: (context) {
-                return deleteDialog(business, theme, context);
+                return deleteDialog(store, theme, context);
               }),
           icon: const Icon(
             LucideIcons.trash,
@@ -183,15 +172,15 @@ class _BusinessDetailsState extends State<BusinessDetails> {
       stretch: true,
       elevation: 0.0,
       stretchTriggerOffset: 100,
-      flexibleSpace: photosCarousel(business, theme),
+      flexibleSpace: photosCarousel(store, theme),
     );
   }
 
-  Widget photosCarousel(Business business, ThemeData theme) {
+  Widget photosCarousel(Store store, ThemeData theme) {
     return FlexibleSpaceBar(
-      background: business.photos!.isNotEmpty
+      background: store.photos!.isNotEmpty
           ? PageView.builder(
-              itemCount: business.photos!.length,
+              itemCount: store.photos!.length,
               controller: controller,
               itemBuilder: (context, index) => Stack(
                 alignment: Alignment.bottomRight,
@@ -201,7 +190,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
                         const Center(
                       child: CircularProgressIndicator.adaptive(),
                     ),
-                    imageUrl: business.photos![index],
+                    imageUrl: store.photos![index],
                     errorWidget: (context, url, error) => const Icon(
                       LucideIcons.imageOff,
                       size: IconSizes.largest,
@@ -227,12 +216,12 @@ class _BusinessDetailsState extends State<BusinessDetails> {
                     child: RichText(
                       text: TextSpan(
                         text:
-                            "${business.photos!.indexOf(business.photos![index]) + 1}",
+                            "${store.photos!.indexOf(store.photos![index]) + 1}",
                         style: theme.textTheme.titleSmall!
                             .copyWith(color: theme.colorScheme.secondary),
                         children: [
                           TextSpan(
-                            text: "/${business.photos!.length}",
+                            text: "/${store.photos!.length}",
                             style: theme.textTheme.titleSmall,
                           )
                         ],
@@ -246,7 +235,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
               color: theme.colorScheme.secondary,
               child: Center(
                 child: Text(
-                  Utilities.getInitials(business.name!),
+                  Utilities.getInitials(store.name!),
                   style: theme.textTheme.displayMedium!.copyWith(
                     color: theme.colorScheme.primary,
                   ),
@@ -261,11 +250,11 @@ class _BusinessDetailsState extends State<BusinessDetails> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            business.name!,
+            store.name!,
             style: theme.textTheme.titleLarge!.copyWith(color: Colors.white),
           ),
           Text(
-            "Business ID: ${business.uniqueCode!}",
+            "Store ID: ${store.uniqueCode!} ● ${Utilities.convertStoreCategoryToText(store.category!)}",
             style: theme.textTheme.labelSmall!
                 .copyWith(color: Colors.white, letterSpacing: 0),
           ),
@@ -275,15 +264,14 @@ class _BusinessDetailsState extends State<BusinessDetails> {
     );
   }
 
-  AlertDialog deleteDialog(
-      Business business, ThemeData theme, BuildContext context) {
+  AlertDialog deleteDialog(Store store, ThemeData theme, BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       title: const Text("Delete"),
       content: Text.rich(
         TextSpan(text: "Are you sure you want to delete ", children: [
           TextSpan(
-            text: "${business.name}",
+            text: "${store.name}",
             style: TextStyle(
               color: theme.colorScheme.primary,
             ),
@@ -295,9 +283,9 @@ class _BusinessDetailsState extends State<BusinessDetails> {
       ),
       actions: [
         TextButton(
-          onPressed: () => deleteBusiness(
-            business.uid,
-            business.name!,
+          onPressed: () => deleteStore(
+            store.uid,
+            store.name!,
           ),
           style: ButtonStyle(
             backgroundColor: MaterialStateProperty.all(
@@ -334,7 +322,7 @@ class _BusinessDetailsState extends State<BusinessDetails> {
                         title: e,
                         trailing: LucideIcons.arrowUpRight,
                         // onTap: () => _launcherService.makePhoneCall(
-                        //     context, business.phone!),
+                        //     context, store.phone!),
                       ),
                       divider(theme),
                     ],

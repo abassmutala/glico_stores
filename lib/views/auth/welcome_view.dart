@@ -1,17 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/locator.dart';
-import 'package:glico_stores/services/navigation_service.dart';
+import 'package:flutter/services.dart';
 
-class Welcome extends StatelessWidget {
+import '../../constants/route_names.dart';
+import '../../constants/ui_constants.dart';
+import '../../locator.dart';
+import '../../services/auth_service.dart';
+import '../../services/navigation_service.dart';
+
+class Welcome extends StatefulWidget {
   const Welcome({super.key});
+
+  @override
+  State<Welcome> createState() => _WelcomeState();
+}
+
+class _WelcomeState extends State<Welcome> {
+  late bool isLoading;
+  final AuthService _auth = locator<AuthService>();
+  final NavigationService navService = locator<NavigationService>();
+
+  @override
+  void initState() {
+    super.initState();
+    isLoading = false;
+  }
+
+  Future signIn(ThemeData theme) async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      await _auth.signInWithToken("token");
+      setState(() {
+        isLoading = false;
+      });
+      navService.navigateToReplacement(storesListRoute);
+    } on PlatformException catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Sign in failed"),
+          content: Text("${e.message}"),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final NavigationService navService = locator<NavigationService>();
 
     return Stack(
       fit: StackFit.expand,
@@ -31,17 +71,11 @@ class Welcome extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 350,
-                  child: SvgPicture.asset(
-                    "images/glico_general_logo.svg",
-                    fit: BoxFit.contain,
-                  ),
-                ),
                 const Spacer(),
-                SizedBox(
+                Container(
                   height: 54,
-                  width: 192,
+                  width: ScreenSize.width,
+                  constraints: const BoxConstraints(maxWidth: 360),
                   child: ElevatedButton(
                     style: ButtonStyle(
                         backgroundColor: MaterialStatePropertyAll(
@@ -57,17 +91,24 @@ class Welcome extends StatelessWidget {
                   ),
                 ),
                 Spacing.verticalSpace16,
-                GestureDetector(
-                  child: const Text(
-                    "Already have an account? Sign in",
-                    style: TextStyle(
-                      decoration: TextDecoration.underline,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                Container(
+                  height: 54,
+                  width: ScreenSize.width,
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: ElevatedButton(
+                    style: ButtonStyle(
+                        backgroundColor: MaterialStatePropertyAll(
+                            theme.colorScheme.secondary)),
+                    onPressed: () async =>
+                        !isLoading ? await signIn(theme) : null,
+                    child: Text(
+                      "Sign In",
+                      style: theme.textTheme.headlineSmall!.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  onTap: () => navService.navigateTo(signInViewRoute),
                 ),
               ],
             ),

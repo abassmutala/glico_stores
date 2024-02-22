@@ -1,4 +1,4 @@
-# glico_stores
+# Trilo
 
 A new Flutter project.
 

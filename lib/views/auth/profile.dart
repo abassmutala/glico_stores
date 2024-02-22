@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/locator.dart';
-import 'package:glico_stores/models/user.dart';
-import 'package:glico_stores/services/auth_service.dart';
-import 'package:glico_stores/services/database_service.dart';
-import 'package:glico_stores/services/navigation_service.dart';
-import 'package:glico_stores/utils/utilities.dart';
-import 'package:glico_stores/widgets/empty_state_layout.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:trilo/constants/app_colors.dart';
+import 'package:trilo/constants/route_names.dart';
+import 'package:trilo/constants/ui_constants.dart';
+import 'package:trilo/locator.dart';
+import 'package:trilo/models/user.dart';
+import 'package:trilo/services/auth_service.dart';
+import 'package:trilo/services/database_service.dart';
+import 'package:trilo/services/navigation_service.dart';
+import 'package:trilo/utils/utilities.dart';
+import 'package:trilo/widgets/empty_state_layout.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -57,7 +57,7 @@ class _ProfileViewState extends State<ProfileView> {
             return Stack(
               children: [
                 Image.asset(
-                  "images/rectangle.png",
+                  "images/ericsson-mobility-report-novembe.png",
                   fit: BoxFit.cover,
                 ),
                 const ModalBarrier(

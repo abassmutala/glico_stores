@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
+import '/constants/app_colors.dart';
+import '/constants/ui_constants.dart';
 
 class InputField extends StatelessWidget {
   const InputField({

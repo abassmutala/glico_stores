@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
+import '/constants/ui_constants.dart';
 
 class DetailsSkeleton extends StatefulWidget {
   const DetailsSkeleton({super.key});

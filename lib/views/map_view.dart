@@ -38,7 +38,7 @@ class _MapViewState extends State<MapView> {
     setState(() {
       _markers.add(
         Marker(
-          markerId: const MarkerId('business_location'),
+          markerId: const MarkerId('store_location'),
           position: LatLng(widget.latitude, widget.longitude),
           icon: markerIcon,
         ),

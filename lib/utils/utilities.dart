@@ -1,8 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/utils/enums.dart';
+import '/constants/ui_constants.dart';
 import 'package:uuid/uuid.dart';
 
 class Utilities {
@@ -38,28 +37,13 @@ class Utilities {
     return convertedString;
   }
 
-  static InsuranceType convertStringToInsuranceTypeEnum(String value) {
-    InsuranceType insuranceType = InsuranceType.values.firstWhere(
-      (type) => type.toString().split('.').last == value,
-      orElse: () => InsuranceType.business, //null
-    );
-    return insuranceType;
-  }
-
-  static String convertbusinessCategoryToText(String categoryCode) {
+  static String convertStoreCategoryToText(String categoryCode) {
     final Map<String, String> categories = {
       "other": "Other",
-      "food_supplies": "Food supplies",
-      "fashion": "Fashion",
-      "arts": "Arts",
-      "electronics": "Electronics",
-      "stationery": "Stationery",
-      "agric_supplies": "Agricultural supplies",
-      "home_services": "Home services",
-      "home_supplies": "Home supplies",
-      "repair_construction": "Repair and construction",
-      "commercial_equipment_tools": "Commercial equipment and tools",
-      "health_beauty": "Health and beauty"
+      "wholesaler": "Wholesaler",
+      "retailer": "Retailer",
+      "distributor": "Distributor",
+      "corner_shop": "Corner shop",
     };
 
     return categories[categoryCode] ?? categoryCode;
@@ -161,7 +145,7 @@ class Utilities {
     return uuid;
   }
 
-  static String generateBusinessCode(String city) {
+  static String generateStoreCode(String city) {
     // final String number = "$index".padLeft(5, "0");
     String number = generateRandom8DigitUid();
     final String cityCode = city.substring(0, 3).toUpperCase();

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
+import '/constants/ui_constants.dart';
 
 class EmptyStateLayout extends StatelessWidget {
   final IconData? nullIcon;
@@ -9,13 +9,13 @@ class EmptyStateLayout extends StatelessWidget {
   final String? referralButtonLabel;
 
   const EmptyStateLayout({
-    Key? key,
+    super.key,
     required this.nullIcon,
     this.nullLabel,
     this.nullSubLabel,
     this.referralAction,
     this.referralButtonLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,39 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/views/auth/forgot_password.dart';
-import 'package:glico_stores/views/auth/profile_view.dart';
-import 'package:glico_stores/views/auth/sign_in.dart';
-import 'package:glico_stores/views/auth/sign_up.dart';
-import 'package:glico_stores/views/auth/welcome_view.dart';
-import 'package:glico_stores/views/business/add_business.dart';
-import 'package:glico_stores/views/business/business_details.dart';
-import 'package:glico_stores/views/business/businesses_list.dart';
-import 'package:glico_stores/views/business/edit_details.dart';
+import 'package:trilo/views/auth/profile.dart';
+import 'package:trilo/views/auth/sign_up.dart';
+import '/constants/route_names.dart';
+import '/views/store/add_store.dart';
+import '/views/store/store_details.dart';
+import '/views/store/stores_list.dart';
+import '/views/store/edit_details.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
-    case welcomeViewRoute:
+    case storesListRoute:
       return _getPageRoute(
         routeName: settings.name!,
-        viewToShow: const Welcome(),
+        viewToShow: const StoresList(),
       );
-    case businessesListRoute:
+    case addStoreRoute:
       return _getPageRoute(
         routeName: settings.name!,
-        viewToShow: const BusinessesList(),
+        viewToShow: const AddStore(),
       );
-    case addBusinessRoute:
-      return _getPageRoute(
-        routeName: settings.name!,
-        viewToShow: const AddBusiness(),
-      );
-    case businessDetailsRoute:
+    case storeDetailsRoute:
       final String uid = settings.arguments as String;
       return _getPageRoute(
         routeName: settings.name!,
-        viewToShow: BusinessDetails(uid),
+        viewToShow: StoreDetails(uid),
       );
-    case editBusinessDetailsRoute:
+    case editStoreDetailsRoute:
       final String args = settings.arguments as String;
       return _getPageRoute(
         routeName: settings.name!,
@@ -45,16 +37,6 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return _getPageRoute(
         routeName: settings.name!,
         viewToShow: const SignUp(),
-      );
-    case signInViewRoute:
-      return _getPageRoute(
-        routeName: settings.name!,
-        viewToShow: const SignIn(),
-      );
-    case forgotPasswordRoute:
-      return _getPageRoute(
-        routeName: settings.name!,
-        viewToShow: const ForgotPassword(),
       );
     case profileViewRoute:
       return _getPageRoute(

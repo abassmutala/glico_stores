@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:glico_stores/locator.dart';
-import 'package:glico_stores/services/auth_service.dart';
-import 'package:glico_stores/views/auth/welcome_view.dart';
-import 'package:glico_stores/views/business/businesses_list.dart';
+import 'package:trilo/locator.dart';
+import 'package:trilo/services/auth_service.dart';
+import 'package:trilo/views/auth/welcome_view.dart';
+import 'package:trilo/views/store/stores_list.dart';
 
 import '../../models/user.dart';
 
 class LandingPage extends StatelessWidget {
-  LandingPage({Key? key}) : super(key: key);
+  LandingPage({super.key});
 
 //   @override
 //   _LandingPageState createState() => _LandingPageState();
@@ -40,7 +40,7 @@ class LandingPage extends StatelessWidget {
           if (user == null) {
             return const Welcome();
           }
-          return const BusinessesList();
+          return const StoresList();
         });
   }
 }

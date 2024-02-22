@@ -4,23 +4,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/regex_patterns.dart';
-import 'package:glico_stores/constants/route_names.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
-import 'package:glico_stores/locator.dart';
-import 'package:glico_stores/models/business.dart';
-import 'package:glico_stores/models/business_location.dart';
-import 'package:glico_stores/services/database_service.dart';
-import 'package:glico_stores/services/location_service.dart';
-import 'package:glico_stores/services/navigation_service.dart';
-import 'package:glico_stores/utils/enums.dart';
-import 'package:glico_stores/utils/utilities.dart';
-import 'package:glico_stores/views/business/add_business.dart';
-import 'package:glico_stores/views/map_view.dart';
-import 'package:glico_stores/widgets/input_field.dart';
-import 'package:intl/intl.dart';
+import '/constants/app_colors.dart';
+import '/constants/regex_patterns.dart';
+import '/constants/route_names.dart';
+import '/constants/ui_constants.dart';
+import '/locator.dart';
+import '/models/store.dart';
+import '/models/store_location.dart';
+import '/services/database_service.dart';
+import '/services/location_service.dart';
+import '/services/navigation_service.dart';
+import '/views/map_view.dart';
+import '/widgets/input_field.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class EditDetails extends StatefulWidget {
@@ -36,33 +31,28 @@ class _EditDetailsState extends State<EditDetails>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
-  final GlobalKey<FormState> _editBusinessFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _editStoreFormKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _ownerController;
   late TextEditingController _addressController;
   late TextEditingController _commentController;
-  late TextEditingController _assetValueController;
-  late TextEditingController _premiumValueController;
   late List<TextEditingController> _phoneInputControllers = [];
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _ownerFocus = FocusNode();
   final FocusNode _addressFocus = FocusNode();
   final FocusNode _commentFocus = FocusNode();
   final FocusNode _categoryFocus = FocusNode();
-  final FocusNode _assetValueFocus = FocusNode();
 
   _nameEditingComplete() => FocusScope.of(context).nextFocus();
   _ownerEditingComplete() => FocusScope.of(context).nextFocus();
   _addressEditingComplete() => FocusScope.of(context).nextFocus();
   _commentEditingComplete() => FocusScope.of(context).nextFocus();
-  _assetValueEditingComplete() => FocusScope.of(context).nextFocus();
 
   bool isLoading = true;
   late String dropdownValue;
-  late InsuranceType insuranceTypeValue;
   late GeoPoint? coordinates;
-  late BusinessLocation? currentLocation;
-  late BusinessLocation? currentAddress;
+  late StoreLocation? currentLocation;
+  late StoreLocation? currentAddress;
   late List<File>? selectedImages;
   List<File> filesList = [];
   late List? downloadedPhotos;
@@ -106,7 +96,7 @@ class _EditDetailsState extends State<EditDetails>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            "Could not get location of business",
+            "Could not get location of store",
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -115,8 +105,8 @@ class _EditDetailsState extends State<EditDetails>
     }
   }
 
-  Future updateBusinessData(uid) async {
-    final Map<String, dynamic> businessData = {
+  Future updateStoreData(uid) async {
+    final Map<String, dynamic> storeData = {
       "uid": uid,
       "name": _nameController.text,
       "owner": _ownerController.text,
@@ -126,18 +116,15 @@ class _EditDetailsState extends State<EditDetails>
       "comment": _commentController.text,
       "phone": _phoneInputControllers.map((e) => e.text).toList(),
       // "photos": widget.args.photos,
-      "insuranceType": insuranceTypeValue.name,
-      "estimatedAssetValue": double.parse(_assetValueController.text),
-      "premium": double.parse(_premiumValueController.text),
     };
 
     try {
-      db.updateBusinessData(uid, businessData);
+      db.updateStoreData(uid, storeData);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         backgroundColor: Colors.green,
         content: Text("Data updated successfully"),
       ));
-      navService.navigateToReplacement(businessesListRoute);
+      navService.navigateToReplacement(storesListRoute);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -161,10 +148,10 @@ class _EditDetailsState extends State<EditDetails>
     }
   }
 
-  Future<Business> _fetchBusinessData() async {
-    final business = await db.getBusiness(widget.uid);
+  Future<Store> _fetchStoreData() async {
+    final store = await db.getStore(widget.uid);
     setState(() => isLoading = false);
-    return business;
+    return store;
   }
 
   @override
@@ -172,31 +159,23 @@ class _EditDetailsState extends State<EditDetails>
     super.initState();
     _controller = AnimationController(vsync: this);
     _phoneInputControllers.isEmpty ? _addPhoneNumber() : null;
-    _fetchBusinessData()
-        .then((business) => {
-              _nameController = TextEditingController(text: business.name!),
-              _ownerController = TextEditingController(text: business.owner!),
-              _addressController =
-                  TextEditingController(text: business.address!),
-              coordinates = business.coordinates,
-              dropdownValue = business.category!,
-              insuranceTypeValue = Utilities.convertStringToInsuranceTypeEnum(
-                  business.insuranceType!),
-              _commentController =
-                  TextEditingController(text: business.comment!),
-              _assetValueController = TextEditingController(
-                  text: business.estimatedAssetValue!.toString()),
-              _premiumValueController =
-                  TextEditingController(text: business.premium!.toString()),
-              _phoneInputControllers = business.phone!
+    _fetchStoreData()
+        .then((store) => {
+              _nameController = TextEditingController(text: store.name!),
+              _ownerController = TextEditingController(text: store.owner!),
+              _addressController = TextEditingController(text: store.address!),
+              coordinates = store.coordinates,
+              dropdownValue = store.category!,
+              _commentController = TextEditingController(text: store.comment!),
+              _phoneInputControllers = store.phone!
                   .map((e) => TextEditingController(text: e.toString()))
                   .toList(),
-              downloadedPhotos = business.photos,
+              downloadedPhotos = store.photos,
               selectedImages =
-                  business.photos!.map((e) => File(e as String)).toList(),
-              convertPathsToFiles(business.photos!),
+                  store.photos!.map((e) => File(e as String)).toList(),
+              convertPathsToFiles(store.photos!),
             })
-        .then((value) => print(downloadedPhotos));
+        .then((value) => debugPrint("$downloadedPhotos"));
   }
 
   @override
@@ -220,7 +199,7 @@ class _EditDetailsState extends State<EditDetails>
         : Stack(
             children: [
               Image.asset(
-                "images/rectangle.png",
+                "images/ericsson-mobility-report-novembe.png",
                 fit: BoxFit.cover,
               ),
               const ModalBarrier(
@@ -238,7 +217,7 @@ class _EditDetailsState extends State<EditDetails>
                       children: [
                         Positioned.fill(
                           child: Image.asset(
-                            "images/rectangle.png",
+                            "images/ericsson-mobility-report-novembe.png",
                             fit: BoxFit.cover,
                             alignment: Alignment.topCenter,
                           ),
@@ -250,16 +229,12 @@ class _EditDetailsState extends State<EditDetails>
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SizedBox(
-                              width: 320,
-                              child: SvgPicture.asset(
-                                  "images/glico_general_logo.svg"),
-                            ),
                             Text(
-                              "Edit business",
+                              "Edit store",
                               style: theme.textTheme.headlineSmall!.copyWith(
                                 color: Colors.white,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         )
@@ -285,7 +260,7 @@ class _EditDetailsState extends State<EditDetails>
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       children: [
                         Form(
-                          key: _editBusinessFormKey,
+                          key: _editStoreFormKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -295,9 +270,6 @@ class _EditDetailsState extends State<EditDetails>
                               _mapView(coordinates),
                               _categoryInputField(theme),
                               _phoneNumberWidgets(theme),
-                              _insuraneTypePicker(theme),
-                              _estimatedAssetValueInputField(theme),
-                              _premium(theme),
                               _commentInputField(theme),
                               _photosInputField(theme),
                             ],
@@ -322,13 +294,11 @@ class _EditDetailsState extends State<EditDetails>
           height: 54,
           width: 192,
           child: ElevatedButton(
-            // margin: Insets.verticalPadding12,
             onPressed: () async {
-              return !isLoading && _editBusinessFormKey.currentState!.validate()
-                  ? await updateBusinessData(widget.uid)
+              return !isLoading && _editStoreFormKey.currentState!.validate()
+                  ? await updateStoreData(widget.uid)
                   : null;
             },
-            // margin: Insets.verticalPadding12,
             child: isLoading
                 ? CircularProgressIndicator(
                     color: theme.colorScheme.secondary,
@@ -344,20 +314,6 @@ class _EditDetailsState extends State<EditDetails>
     );
   }
 
-  void _updatePremium(String value) {
-    if (value.isEmpty) {
-      _premiumValueController.text = '';
-    } else {
-      double inputValue = double.tryParse(value.replaceAll(',', '')) ?? 0;
-      double result = inputValue * 0.3;
-
-      // Format the result with thousand separator and 2 decimal places
-      final formattedResult = NumberFormat("#,###.##")
-          .format(double.parse(result.toStringAsFixed(2)));
-      _premiumValueController.text = formattedResult;
-    }
-  }
-
   Widget _nameInputField(ThemeData theme) {
     return InputField(
       isLoading: isLoading,
@@ -366,8 +322,8 @@ class _EditDetailsState extends State<EditDetails>
       focusNode: _nameFocus,
       onEditingComplete: () => _nameEditingComplete(),
       controller: _nameController,
-      labelText: "Business name",
-      validator: (val) => val!.length < 2 ? "Business name is too short" : null,
+      labelText: "Store name",
+      validator: (val) => val!.length < 2 ? "Store name is too short" : null,
     );
   }
 
@@ -458,7 +414,7 @@ class _EditDetailsState extends State<EditDetails>
                     theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
                 label: Container(
                   padding: const EdgeInsets.only(bottom: 36),
-                  child: const Text("Nature of business"),
+                  child: const Text("Nature of store"),
                 ),
                 hintStyle: const TextStyle(color: Colors.grey),
                 floatingLabelBehavior: FloatingLabelBehavior.auto,
@@ -538,7 +494,7 @@ class _EditDetailsState extends State<EditDetails>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Business' photos",
+          "Store' photos",
           style: theme.textTheme.titleMedium!.copyWith(color: Colors.black54),
           textAlign: TextAlign.center,
         ),
@@ -566,93 +522,13 @@ class _EditDetailsState extends State<EditDetails>
                   SizedBox(
                     width: ScreenSize.width,
                     child: const Text(
-                      "No photos added for this business",
+                      "No photos added for this store",
                       textAlign: TextAlign.center,
                     ),
                   )
                 ],
         ),
       ],
-    );
-  }
-
-  Widget _insuraneTypePicker(ThemeData theme) {
-    final List<Map<InsuranceType, String>> insuranceTypes = [
-      {InsuranceType.business: "Business"},
-      {InsuranceType.products: "Products"}
-    ];
-
-    List<DropdownMenuItem<InsuranceType>> buildDropdownMenuItems() {
-      return insuranceTypes.map((insuranceTypeMap) {
-        InsuranceType insuranceType = insuranceTypeMap.keys.first;
-        String value = insuranceTypeMap.values.first;
-
-        return DropdownMenuItem<InsuranceType>(
-          value: insuranceType,
-          child: Text(value),
-        );
-      }).toList();
-    }
-
-    return Padding(
-      padding: Insets.verticalPadding16,
-      child: DropdownButtonFormField<InsuranceType>(
-        items: buildDropdownMenuItems(),
-        value: insuranceTypeValue,
-        onChanged: (InsuranceType? newValue) {
-          setState(() {
-            insuranceTypeValue = newValue!;
-          });
-        },
-        focusNode: _categoryFocus,
-        decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 16.0),
-            filled: true,
-            fillColor: kGlicoInputFill,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(60.0),
-              borderSide: BorderSide.none,
-            ),
-            floatingLabelStyle:
-                theme.textTheme.titleLarge!.copyWith(color: Colors.grey),
-            label: Container(
-              padding: const EdgeInsets.only(bottom: 36.0),
-              child: const Text(
-                "Insurance type",
-              ),
-            ),
-            floatingLabelBehavior: FloatingLabelBehavior.auto),
-        style: theme.textTheme.titleLarge, // validator: (val) =>
-        //     !phoneNumberPattern.hasMatch(val!) ? "Invalid phone number" : null,
-      ),
-    );
-  }
-
-  Widget _estimatedAssetValueInputField(ThemeData theme) {
-    return InputField(
-      isLoading: isLoading,
-      padding: Insets.verticalPadding16,
-      focusNode: _assetValueFocus,
-      onEditingComplete: () => _assetValueEditingComplete(),
-      controller: _assetValueController,
-      onChanged: (val) {
-        _updatePremium(val);
-      },
-      inputFormatters: [ThousandsSeparatorInputFormatter()],
-      labelText: "Sum insured (GH¢)",
-      validator: (val) => val!.length < 3 ? "Name is too short" : null,
-      keyboardType: TextInputType.number,
-    );
-  }
-
-  Widget _premium(ThemeData theme) {
-    return InputField(
-      isLoading: isLoading,
-      padding: Insets.verticalPadding16,
-      readOnly: true,
-      controller: _premiumValueController,
-      labelText: "Premium",
     );
   }
 }

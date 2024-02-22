@@ -7,7 +7,7 @@ class User {
   final String? profilePicture;
   final String? color;
   final String? dateJoined;
-  final List? addedBusinesses;
+  final List? addedStores;
   final Map? deviceInfo;
   final int? uniqueCode; 
 
@@ -20,7 +20,7 @@ class User {
     this.profilePicture,
     this.color,
     this.dateJoined,
-    this.addedBusinesses,
+    this.addedStores,
     this.deviceInfo,
     this.uniqueCode,
   });
@@ -34,7 +34,7 @@ class User {
     final String? profilePicture = mapData['profilePicture'];
     final String color = mapData['color'];
     final String dateJoined = mapData['dateJoined'];
-    final List? addedBusinesses = mapData['addedBusinesses'];
+    final List? addedStores = mapData['addedStores'];
     final Map? deviceInfo = mapData['deviceInfo'];
     final int? uniqueCode = mapData['uniqueCode'];
 
@@ -47,7 +47,7 @@ class User {
       profilePicture: profilePicture,
       color: color,
       dateJoined: dateJoined,
-      addedBusinesses: addedBusinesses,
+      addedStores: addedStores,
       deviceInfo: deviceInfo,
       uniqueCode: uniqueCode,
     );
@@ -63,7 +63,7 @@ class User {
       "profilePicture": profilePicture,
       "color": color,
       "dateJoined": dateJoined,
-      "addedBusinesses": addedBusinesses,
+      "addedStores": addedStores,
       "deviceInfo": deviceInfo,
       "uniqueCode": uniqueCode,
     };

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:trilo/models/user.dart';
 // import 'package:geoflutterfire/geoflutterfire.dart';
-import 'package:glico_stores/constants/api_path.dart';
-import 'package:glico_stores/models/business.dart';
-import 'package:glico_stores/models/user.dart';
+import '/constants/api_path.dart';
+import '/models/store.dart';
 
 class DatabaseService {
   final String? uid;
@@ -96,7 +96,7 @@ class DatabaseService {
     }
   }
 
-  /* User */
+/* User */
   Future<void> createProfile(User user) async {
     await _setData(
       path: APIPath.profile(user.uid),
@@ -107,96 +107,29 @@ class DatabaseService {
   Future<User> getUser(String? userId) async {
     try {
       var userData = await _service.doc(APIPath.profile(userId!)).get();
-      return User.fromMap(
-        userData.data()!,
-      );
+      return User.fromMap(userData.data()!);
     } on PlatformException catch (e) {
       throw PlatformException(code: e.code, message: e.toString());
     }
   }
 
-  Future deleteUser(String uid) async {
-    await _deleteDoc(documentPath: "${APIPath.users()}/$uid}");
-  }
-
-  Future<bool> checkIfCredentialsMatch(
-      User? user, String uniqueCode, String deviceID) async {
-    //  final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final userId = user.uid;
-      final User userData = await getUser(userId);
-
-      final storedUniqueId = userData.uniqueCode;
-      final storedDeviceID = userData.deviceInfo!["id"];
-
-      if (uniqueCode == storedUniqueId && deviceID == storedDeviceID) {
-        // Update the session timestamp to extend it by 72 hours
-        final currentTime = DateTime.now().millisecondsSinceEpoch;
-        await _updateData(documentPath: "users/${user.uid}", data: {'lastLoginTimestamp': currentTime});
-
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  Future updateRegisteredBusinessesForUser(
-      String uid, String businessId) async {
-    try {
-      await _updateData(documentPath: APIPath.profile(uid), data: {
-        "addedBusinesses": FieldValue.arrayUnion([businessId]),
-      });
-    } on PlatformException catch (e) {
-      throw PlatformException(
-        code: e.code,
-        message: e.message,
-      );
-    }
-  }
-
-  // Stream<List<T>> nearBysStream<T>({
-  //   required UserLocation userLocation,
-  //   required String path,
-  //   required T Function(Map<String, dynamic> data) builder,
-  // }) {
-  //   GeoFirePoint center = geo.point(
-  //     latitude: userLocation.latitude!,
-  //     longitude: userLocation.longitude!,
-  //   );
-  //   final CollectionReference<Map<String, dynamic>> reference =
-  //       _service.collection(path);
-
-  //   double radius = 2;
-  //   String field = 'position';
-
-  //   final snapshots = geo.collection(collectionRef: reference).within(
-  //         center: center,
-  //         radius: radius,
-  //         field: field,
-  //       );
-  //   return snapshots.map((docs) {
-  //     return docs.map((doc) => builder(doc.data()!)).toList();
-  //   });
-  // }
-
-/* Business */
-  Future<String> createBusinessProfile(Business business) async {
+/* Store */
+  Future<String> createStoreProfile(Store store) async {
     final uid = await _addData(
-      path: APIPath.businesses(),
-      data: business.toJson(),
+      path: APIPath.stores(),
+      data: store.toJson(),
     );
     return uid;
   }
 
-  Future<void> updateBusinessUid(uid) async {
+  Future<void> updateStoreUid(uid) async {
     await _updateData(
-        documentPath: APIPath.businessProfile(uid), data: {"uid": uid});
+        documentPath: APIPath.storeProfile(uid), data: {"uid": uid});
   }
 
-  Future<List<Map<String, dynamic>>> getBusinessesCategories() async {
+  Future<List<Map<String, dynamic>>> getStoreCategories() async {
     return await _collectionFuture(
-      path: APIPath.businessCategories(),
+      path: APIPath.storeCategories(),
       builder: (mapData) => {
         "name": mapData["name"],
         "value": mapData["value"],
@@ -204,10 +137,10 @@ class DatabaseService {
     );
   }
 
-  Future<String> getBusinessesCategory(String value) async {
+  Future<String> getStoresCategory(String value) async {
     try {
       final data = await _service
-          .collection(APIPath.businessCategories())
+          .collection(APIPath.storeCategories())
           .where("value", isEqualTo: value)
           .get();
       final String kV = await data.docs.first.data()["name"];
@@ -220,30 +153,32 @@ class DatabaseService {
     }
   }
 
-  Future<List<Business>> getBusinessesList() async {
+  Future<List<Store>> getStoresList() async {
     return await _collectionFuture(
-      path: APIPath.businesses(),
-      builder: (mapData) => Business.fromMap(mapData),
+      path: APIPath.stores(),
+      builder: (mapData) => Store.fromMap(mapData),
     );
   }
 
-  Stream<List<Business>?> getBusinessesStream() {
-    final reference = _service.collection(APIPath.businesses()).orderBy('regDate', descending: true);
+  Stream<List<Store>?> getStoresStream() {
+    final reference = _service
+        .collection(APIPath.stores())
+        .orderBy('regDate', descending: true);
     final snapshots = reference.snapshots();
     return snapshots.map(
       (snapshot) => snapshot.docs
           .map(
-            (document) => Business.fromMap(document.data()),
+            (document) => Store.fromMap(document.data()),
           )
           .toList(),
     );
     // return _collectionStream(
-    //   path: , builder: (data) => Business.fromMap(data));
+    //   path: , builder: (data) => Store.fromMap(data));
   }
 
   Stream<List<Map<String, dynamic>>> getCategoriesStream() {
     final data = _collectionStream(
-        path: APIPath.businessCategories(),
+        path: APIPath.storeCategories(),
         builder: (data) => {
               "name": data["name"],
               "value": data["value"],
@@ -251,10 +186,10 @@ class DatabaseService {
     return data;
   }
 
-  Future<Business> getBusiness(String uid) async {
+  Future<Store> getStore(String uid) async {
     try {
-      final data = await _service.doc(APIPath.businessProfile(uid)).get();
-      return Business.fromMap(
+      final data = await _service.doc(APIPath.storeProfile(uid)).get();
+      return Store.fromMap(
         data.data()!,
       );
     } on PlatformException catch (e) {
@@ -265,67 +200,16 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateBusinessData(String uid, Map<String, dynamic> data) async {
+  Future<void> updateStoreData(String uid, Map<String, dynamic> data) async {
     await _updateData(
-      documentPath: APIPath.businessProfile(uid),
+      documentPath: APIPath.storeProfile(uid),
       data: data,
     );
   }
 
-  Future<void> deleteBusiness(String uid) async {
+  Future<void> deleteStore(String uid) async {
     await _deleteDoc(
-      documentPath: APIPath.businessProfile(uid),
+      documentPath: APIPath.storeProfile(uid),
     );
   }
-
-/* User */
-// user data from snapshots
-  User _userDataFromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
-    return User.fromMap(snapshot.data()!);
-  }
-
-  // get user doc stream
-  Stream<User> get userData {
-    return _service
-        .doc(APIPath.profile(uid!))
-        .snapshots()
-        .map(_userDataFromSnapshot);
-  }
-
-/* Stays */
-  Future<List<Map<String, dynamic>>?> getStayTypes() async {
-    final CollectionReference<Map<String, dynamic>> reference =
-        _service.collection('stay_types/');
-    final QuerySnapshot<Map<String, dynamic>> snapshots = await reference.get();
-    final List<Map<String, dynamic>> stayTypesData = snapshots.docs.map((e) {
-      return {
-        'name': e.data()['name'],
-        'photo': e.data()['photo'],
-      };
-    }).toList();
-    return stayTypesData;
-  }
-
-  // Future<bool> checkIfFavouriteExists(String uid, String assetId) async {
-  //   try {
-  //     final CollectionReference<Map<String, dynamic>> favouritesCollection =
-  //         _service.collection('/users/$uid/favourites/');
-  //     final QuerySnapshot<Map<String, dynamic>> favData =
-  //         await favouritesCollection
-  //             .where('asset_id', isEqualTo: assetId)
-  //             .get();
-  //     if (favData == null) {
-  //       return false;
-  //     } else if (favData.docs.isNotEmpty) {
-  //       debugPrint(favData.docs.single.data()['asset_id']);
-  //       return true;
-  //     }
-  //     return false;
-  //   } on PlatformException catch (e) {
-  //     throw PlatformException(
-  //       code: e.code,
-  //       message: e.toString(),
-  //     );
-  //   }
-  // }
 }

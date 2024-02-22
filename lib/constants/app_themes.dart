@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:glico_stores/constants/app_colors.dart';
-import 'package:glico_stores/constants/ui_constants.dart';
+import '/constants/app_colors.dart';
+import '/constants/ui_constants.dart';
 
 final ThemeData glicoLightTheme = _glicoLightTheme();
 
@@ -9,7 +9,6 @@ ThemeData _glicoLightTheme() {
   const CupertinoTextThemeData appleBase = CupertinoTextThemeData();
   final ThemeData base = ThemeData.light();
   return base.copyWith(
-    useMaterial3: true,
     textTheme: _glicoLightTextTheme(base.textTheme),
     scaffoldBackgroundColor: kGlicoScaffoldBackground,
     appBarTheme: base.appBarTheme.copyWith(
@@ -19,8 +18,7 @@ ThemeData _glicoLightTheme() {
     textSelectionTheme: TextSelectionThemeData(
         selectionColor: base.colorScheme.primary.withOpacity(0.25)),
     tabBarTheme: base.tabBarTheme.copyWith(
-      labelStyle:
-          base.textTheme.bodyLarge!.copyWith(fontFamily: 'Nunito'),
+      labelStyle: base.textTheme.bodyLarge!.copyWith(fontFamily: 'Nunito'),
       labelColor: base.textTheme.bodyLarge!.color,
       unselectedLabelColor: base.textTheme.bodyLarge!.color!.withOpacity(0.7),
       unselectedLabelStyle: base.textTheme.bodyLarge!.copyWith(
@@ -134,8 +132,8 @@ CupertinoTextThemeData _glicoCupertinoLightTextTheme(
   return appleBase.copyWith(
     navTitleTextStyle:
         appleBase.navTitleTextStyle.copyWith(fontFamily: 'Nunito'),
-    navLargeTitleTextStyle: appleBase.navLargeTitleTextStyle
-        .copyWith(fontFamily: 'Nunito'),
+    navLargeTitleTextStyle:
+        appleBase.navLargeTitleTextStyle.copyWith(fontFamily: 'Nunito'),
     tabLabelTextStyle:
         appleBase.tabLabelTextStyle.copyWith(fontFamily: 'Nunito'),
   );

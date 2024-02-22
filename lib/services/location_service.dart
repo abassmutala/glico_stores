@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
-import 'package:glico_stores/constants/credentials.dart';
-import 'package:glico_stores/models/business_location.dart';
+import '/constants/credentials.dart';
+import '/models/store_location.dart';
 import 'package:http/http.dart' as http;
 // import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -13,10 +13,10 @@ class LocationService {
   late bool _serviceEnabled;
   late LocationPermission _permissionStatus;
   Position? _locationData;
-  BusinessLocation? currentPosition;
-  BusinessLocation? _businessLocation;
+  StoreLocation? currentPosition;
+  StoreLocation? _storeLocation;
   // CameraPosition? cameraPosition;
-  BusinessLocation? locationCoordinates;
+  StoreLocation? locationCoordinates;
   final geocoding.GeocodingPlatform _geocodingInstance =
       geocoding.GeocodingPlatform.instance;
 
@@ -44,11 +44,11 @@ class LocationService {
     }
   }
 
-  Future<BusinessLocation> getCurrentLocation() async {
+  Future<StoreLocation> getCurrentLocation() async {
     try {
       await initialisePermissions();
       _locationData = await Geolocator.getCurrentPosition();
-      locationCoordinates = BusinessLocation(
+      locationCoordinates = StoreLocation(
         latitude: _locationData?.latitude,
         longitude: _locationData?.longitude,
       );
@@ -63,7 +63,7 @@ class LocationService {
     }
   }
 
-  Future<BusinessLocation?> convertToAddress(
+  Future<StoreLocation?> convertToAddress(
     double lat,
     double lng,
   ) async {
@@ -73,9 +73,8 @@ class LocationService {
 
     var response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
-      var jsonResponse =
-          jsonDecode(response.body);
-      final location = BusinessLocation.fromMap(jsonResponse);
+      var jsonResponse = jsonDecode(response.body);
+      final location = StoreLocation.fromMap(jsonResponse);
       print("service Location: $jsonResponse");
       print("service Location: ${location.latitude}  ${location.longitude}");
       return location;
@@ -86,7 +85,7 @@ class LocationService {
 
   // void locateUserOnMap() async {
   //   final _locationCoordinates = await getCurrentLocation().then(
-  //       (userLocation) => BusinessLocation(
+  //       (userLocation) => StoreLocation(
   //           latitude: userLocation.latitude,
   //           longitude: userLocation.longitude));
   //   cameraPosition = CameraPosition(
@@ -97,8 +96,8 @@ class LocationService {
   //   // return cameraPosition;
   // }
 
-  Future<BusinessLocation?> getAddressFromCoordinates(
-      {BusinessLocation? currentPosition}) async {
+  Future<StoreLocation?> getAddressFromCoordinates(
+      {StoreLocation? currentPosition}) async {
     try {
       final currentPosition0 = currentPosition ?? await getCurrentLocation();
       List<geocoding.Placemark> placemarks =
@@ -107,7 +106,7 @@ class LocationService {
         currentPosition0.longitude!,
       );
       geocoding.Placemark place = placemarks[0];
-      _businessLocation = BusinessLocation(
+      _storeLocation = StoreLocation(
         latitude: currentPosition0.latitude,
         longitude: currentPosition0.longitude,
         subLocality: place.subLocality,
@@ -119,7 +118,7 @@ class LocationService {
       debugPrint('administrativeArea: ${place.administrativeArea}');
       debugPrint('locality: ${place.locality}');
       debugPrint('subLocality: ${place.subLocality}');
-      return _businessLocation;
+      return _storeLocation;
     } on PlatformException catch (e) {
       throw PlatformException(
         code: e.code,
@@ -128,13 +127,13 @@ class LocationService {
     }
   }
 
-  Future<BusinessLocation> getCoordinatesFromAddress(String address) async {
+  Future<StoreLocation> getCoordinatesFromAddress(String address) async {
     try {
       List<geocoding.Location> locations =
           await geocoding.locationFromAddress(address);
       if (locations.isNotEmpty) {
         final output = locations[0];
-        currentPosition = BusinessLocation(
+        currentPosition = StoreLocation(
             latitude: output.latitude, longitude: output.longitude);
         debugPrint(
             'CurrentPosition: ${currentPosition!.latitude}, ${currentPosition!.longitude}');

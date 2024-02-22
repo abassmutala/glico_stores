@@ -1,10 +1,11 @@
 import 'package:get_it/get_it.dart';
-import 'package:glico_stores/services/auth_service.dart';
-import 'package:glico_stores/services/database_service.dart';
-import 'package:glico_stores/services/image_picker_service.dart';
-import 'package:glico_stores/services/location_service.dart';
-import 'package:glico_stores/services/navigation_service.dart';
-import 'package:glico_stores/services/storage_service.dart';
+import 'package:trilo/services/auth_service.dart';
+
+import 'services/database_service.dart';
+import 'services/image_picker_service.dart';
+import 'services/location_service.dart';
+import 'services/navigation_service.dart';
+import 'services/storage_service.dart';
 
 GetIt locator = GetIt.instance;
 
